@@ -31,6 +31,12 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+      # Build-time only (Vite inlines this into the bundle at `npm run
+      # build:client`, so it isn't read at runtime) — `/api/v1` is a
+      # relative path, correct regardless of the assigned domain, since
+      # frontend and backend are served from the same origin.
+      - key: VITE_API_URL
+        value: /api/v1
       - key: DATABASE_URL
         sync: false
       - key: DIRECT_URL
