@@ -80,7 +80,6 @@ export default function LoginPage() {
     <AuthLayout
       key="credentials"
       title="Sign in"
-      description="Welcome back — enter your details to access your account."
       footer={
         <>
           Don't have an account?{' '}
