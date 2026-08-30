@@ -1,0 +1,55 @@
+# Render Blueprint — deploys this app as a single free Web Service that
+# serves both the API and the built React app from one origin (see
+# docs/deployment/render.md for the full walkthrough and why single-origin
+# matters for the session cookie).
+#
+# Usage: Render dashboard → New → Blueprint → pick this repo. Render reads
+# this file automatically. Fields marked `sync: false` are secrets you'll
+# be prompted to fill in during setup — they are never stored in this repo.
+services:
+  - type: web
+    name: surprise-real-estate
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build:client && npm run build:server && npm run deploy:migrate
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render assigns the public URL after the first deploy (shown in the
+      # dashboard as https://surprise-real-estate-XXXX.onrender.com). Come
+      # back and set CLIENT_URL + CORS_ORIGINS to that exact URL once you
+      # know it — see docs/deployment/render.md step 6.
+      - key: PORT
+        value: 10000
+      - key: CLIENT_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: MFA_ENCRYPTION_KEY
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: "Surprise Real Estate"
+      - key: EMAIL_FROM_ADDRESS
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
