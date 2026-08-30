@@ -26,8 +26,7 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout
-      title="Create your organization"
-      description="Set up Surprise Real Estate for your property management company. You'll be the first administrator."
+      title="Register"
       footer={
         <>
           Already have an account?{' '}

@@ -79,7 +79,7 @@ export default function LoginPage() {
   return (
     <AuthLayout
       key="credentials"
-      title="Sign in"
+      title="Login"
       footer={
         <>
           Don't have an account?{' '}
@@ -118,7 +118,7 @@ export default function LoginPage() {
           </div>
         </div>
         <Button type="submit" loading={credentialsForm.formState.isSubmitting} className="w-full">
-          Sign in
+          Login
         </Button>
       </form>
     </AuthLayout>
