@@ -39,10 +39,10 @@ export default function RegisterPage() {
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
-          <Field label="First name" placeholder="Ada" autoComplete="given-name" autoFocus glass error={errors.firstName?.message} {...register('firstName')} />
-          <Field label="Last name" placeholder="Lovelace" autoComplete="family-name" glass error={errors.lastName?.message} {...register('lastName')} />
+          <Field label="First name" placeholder="Enter first name" autoComplete="given-name" autoFocus glass error={errors.firstName?.message} {...register('firstName')} />
+          <Field label="Last name" placeholder="Enter last name" autoComplete="family-name" glass error={errors.lastName?.message} {...register('lastName')} />
         </div>
-        <Field label="Email address" type="email" placeholder="you@example.com" autoComplete="email" glass error={errors.email?.message} {...register('email')} />
+        <Field label="Email address" type="email" placeholder="Enter your email" autoComplete="email" glass error={errors.email?.message} {...register('email')} />
         <Field
           label="Password"
           type="password"

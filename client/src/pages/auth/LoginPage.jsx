@@ -94,7 +94,7 @@ export default function LoginPage() {
         <Field
           label="Email address"
           type="email"
-          placeholder="you@example.com"
+          placeholder="Enter your email"
           autoComplete="email"
           autoFocus
           glass
