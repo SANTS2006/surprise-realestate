@@ -38,6 +38,15 @@ export function countWorkOrdersByOrganization(organizationId, { status, vendorId
   return prisma.workOrder.count({ where: buildWorkOrderListWhere(organizationId, { status, vendorId, propertyIds }) });
 }
 
+export async function getWorkOrderStatusSummary(organizationId, { propertyIds } = {}) {
+  const rows = await prisma.workOrder.groupBy({
+    by: ['status'],
+    where: buildWorkOrderListWhere(organizationId, { propertyIds }),
+    _count: { _all: true },
+  });
+  return Object.fromEntries(rows.map((r) => [r.status, r._count._all]));
+}
+
 const UPDATABLE_WORK_ORDER_FIELDS = ['vendorId', 'assignedStaffId', 'scheduledDate', 'estimatedCost'];
 
 export function updateWorkOrder(id, data) {

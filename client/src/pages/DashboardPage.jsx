@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Building2, Layers, Home, Users, UserSquare2, FileText, Wallet,
   Wrench, TrendingUp, TrendingDown, ArrowUpRight, AlertTriangle,
+  ClipboardList, Truck, CalendarClock,
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -21,6 +22,8 @@ const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' });
 const PAYMENT_TONE = { completed: 'success', pending: 'warning', failed: 'danger', refunded: 'neutral' };
 const UNIT_STATUS_LABEL = { available: 'Available', occupied: 'Occupied', reserved: 'Reserved', under_maintenance: 'Maintenance', unavailable: 'Unavailable' };
 const UNIT_STATUS_COLOR = { available: '#00D4C0', occupied: '#00529B', reserved: '#0078C8', under_maintenance: '#f59e0b', unavailable: '#94a3b8' };
+const MAINTENANCE_STATUS_TONE = { open: 'warning', in_review: 'brand', assigned: 'brand', scheduled: 'brand', in_progress: 'warning', completed: 'success', cancelled: 'neutral' };
+const WORK_ORDER_STATUS_TONE = { pending: 'neutral', scheduled: 'brand', in_progress: 'warning', completed: 'success', cancelled: 'neutral' };
 
 function ModuleCard({ to, icon: Icon, label, value }) {
   return (
@@ -230,6 +233,72 @@ function StaffDashboard({ data }) {
   );
 }
 
+function StatusBreakdownCard({ title, byStatus, toneMap }) {
+  const entries = Object.entries(byStatus).filter(([, count]) => count > 0);
+  return (
+    <Card>
+      <CardHeader>
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+      </CardHeader>
+      <CardBody>
+        {entries.length === 0 ? (
+          <p className="py-4 text-center text-sm text-slate-500 dark:text-slate-400">Nothing here yet.</p>
+        ) : (
+          <ul className="flex flex-col gap-2.5">
+            {entries.map(([status, count]) => (
+              <li key={status} className="flex items-center justify-between gap-3">
+                <Badge tone={toneMap[status] ?? 'neutral'}>{status.replace('_', ' ')}</Badge>
+                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{count}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
+
+function MaintenanceManagerDashboard({ data }) {
+  return (
+    <div className="flex flex-col gap-6">
+      {(data.maintenance.emergency > 0 || data.inspections.overdue > 0) && (
+        <div className="flex flex-col gap-2">
+          {data.maintenance.emergency > 0 && (
+            <Alert variant="warning" title="Emergency maintenance">
+              {data.maintenance.emergency} emergency maintenance {data.maintenance.emergency === 1 ? 'request needs' : 'requests need'} attention.
+            </Alert>
+          )}
+          {data.inspections.overdue > 0 && (
+            <Alert variant="warning" title="Overdue inspections">
+              {data.inspections.overdue} scheduled {data.inspections.overdue === 1 ? 'inspection is' : 'inspections are'} past due.
+            </Alert>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <ModuleCard to="/properties" icon={Building2} label="Properties" value={data.properties.total} />
+        <ModuleCard to="/properties" icon={Layers} label="Buildings" value={data.buildings.total} />
+        <ModuleCard to="/properties" icon={Home} label="Units" value={data.units.total} />
+        <ModuleCard to="/owners" icon={UserSquare2} label="Owners" value={data.owners.total} />
+        <ModuleCard to="/tenants" icon={Users} label="Tenants" value={data.tenants.total} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <HeroStat icon={Wrench} label="Open maintenance requests" value={data.maintenance.open} tone={data.maintenance.emergency > 0 ? 'danger' : 'brand'} />
+        <HeroStat icon={ClipboardList} label="Open work orders" value={data.workOrders.open} tone="brand" />
+        <HeroStat icon={Truck} label="Vendors" value={data.vendors.total} tone="brand" />
+        <HeroStat icon={CalendarClock} label="Inspections due (30 days)" value={data.inspections.upcoming} tone={data.inspections.overdue > 0 ? 'warning' : 'brand'} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <StatusBreakdownCard title="Maintenance requests by status" byStatus={data.maintenance.byStatus} toneMap={MAINTENANCE_STATUS_TONE} />
+        <StatusBreakdownCard title="Work orders by status" byStatus={data.workOrders.byStatus} toneMap={WORK_ORDER_STATUS_TONE} />
+      </div>
+    </div>
+  );
+}
+
 function TenantDashboard({ data }) {
   return (
     <div className="flex flex-col gap-6">
@@ -264,7 +333,9 @@ export default function DashboardPage() {
 
       {error && <Alert variant="error">{error}</Alert>}
       {!data && !error && <LoadingState label="Loading dashboard…" />}
-      {data && (data.view === 'tenant' ? <TenantDashboard data={data} /> : <StaffDashboard data={data} />)}
+      {data && data.view === 'tenant' && <TenantDashboard data={data} />}
+      {data && data.view === 'maintenance' && <MaintenanceManagerDashboard data={data} />}
+      {data && data.view === 'staff' && <StaffDashboard data={data} />}
     </div>
   );
 }

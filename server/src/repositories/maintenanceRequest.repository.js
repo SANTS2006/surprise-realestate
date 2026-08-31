@@ -35,6 +35,15 @@ export function countMaintenanceRequestsByOrganization(organizationId, { status,
   return prisma.maintenanceRequest.count({ where: buildMaintenanceListWhere(organizationId, { status, priority, propertyId, tenantId, propertyIds }) });
 }
 
+export async function getMaintenanceRequestStatusSummary(organizationId, { propertyIds } = {}) {
+  const rows = await prisma.maintenanceRequest.groupBy({
+    by: ['status'],
+    where: buildMaintenanceListWhere(organizationId, { propertyIds }),
+    _count: { _all: true },
+  });
+  return Object.fromEntries(rows.map((r) => [r.status, r._count._all]));
+}
+
 export function updateMaintenanceRequestStatus(id, status, extra = {}) {
   return prisma.maintenanceRequest.update({ where: { id }, data: { status, ...extra } });
 }

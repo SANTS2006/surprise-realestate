@@ -5,13 +5,22 @@ import { countLeasesByOrganization, countExpiringLeases } from '../repositories/
 import { sumOutstandingBalance } from '../repositories/invoice.repository.js';
 import { sumCompletedPayments, findPaymentsByOrganization, findCompletedPaymentsSince } from '../repositories/payment.repository.js';
 import { sumApprovedExpenses, findApprovedExpensesSince } from '../repositories/expense.repository.js';
-import { countMaintenanceRequestsByOrganization } from '../repositories/maintenanceRequest.repository.js';
+import { countMaintenanceRequestsByOrganization, getMaintenanceRequestStatusSummary } from '../repositories/maintenanceRequest.repository.js';
+import { getWorkOrderStatusSummary } from '../repositories/workOrder.repository.js';
+import { countVendorsByOrganization } from '../repositories/vendor.repository.js';
+import { countUpcomingInspections, countOverdueInspections } from '../repositories/inspection.repository.js';
 import { countTenantsByOrganization, findTenantByUserId } from '../repositories/tenant.repository.js';
 import { countOwnersByOrganization } from '../repositories/owner.repository.js';
 import { getRestrictedScope, NO_MATCH_ID } from './resourceAccess.service.js';
 
 const OPEN_MAINTENANCE_STATUSES = ['open', 'in_review', 'assigned', 'scheduled', 'in_progress'];
+const OPEN_WORK_ORDER_STATUSES = ['pending', 'scheduled', 'in_progress'];
 const TREND_MONTHS = 6;
+const UPCOMING_INSPECTION_WINDOW_DAYS = 30;
+// Roles that get the full org-/scope-wide financial staff dashboard even if
+// they also happen to hold maintenance_manager — maintenance_manager only
+// gets its own ops-focused view when it's the caller's sole elevated role.
+const RICHER_DASHBOARD_ROLES = ['administrator', 'accountant', 'agent', 'owner', 'auditor'];
 
 function startOfMonth() {
   const now = new Date();
@@ -109,6 +118,53 @@ async function getStaffDashboard(organizationId, propertyIds) {
   };
 }
 
+// maintenance_manager view: operational summary only (properties,
+// buildings, units, owners, tenants counts, plus maintenance/work-order/
+// vendor/inspection detail) — never the financial figures on the staff
+// dashboard, since this role holds no invoices/payments/expenses/reports
+// permission at all (see constants/permissions.js). Always org-wide:
+// maintenance_manager is in ORG_WIDE_PROPERTY_ROLES.
+async function getMaintenanceManagerDashboard(organizationId) {
+  const now = new Date();
+  const upcomingWindowEnd = new Date(now.getTime() + UPCOMING_INSPECTION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+  const [
+    totalProperties, totalBuildings, unitSummary, totalOwners, totalTenants,
+    maintenanceByStatus, emergencyOpen, workOrderByStatus, totalVendors,
+    upcomingInspections, overdueInspections,
+  ] = await Promise.all([
+    countPropertiesByOrganization(organizationId, {}),
+    countBuildingsByOrganization(organizationId, {}),
+    getUnitSummaryForScope(organizationId),
+    countOwnersByOrganization(organizationId, {}),
+    countTenantsByOrganization(organizationId, {}),
+    getMaintenanceRequestStatusSummary(organizationId),
+    countMaintenanceRequestsByOrganization(organizationId, { status: OPEN_MAINTENANCE_STATUSES, priority: 'emergency' }),
+    getWorkOrderStatusSummary(organizationId),
+    countVendorsByOrganization(organizationId, {}),
+    countUpcomingInspections(organizationId, { from: now, to: upcomingWindowEnd }),
+    countOverdueInspections(organizationId, {}),
+  ]);
+
+  const openMaintenance = Object.entries(maintenanceByStatus)
+    .filter(([status]) => OPEN_MAINTENANCE_STATUSES.includes(status))
+    .reduce((sum, [, count]) => sum + count, 0);
+  const openWorkOrders = OPEN_WORK_ORDER_STATUSES.reduce((sum, status) => sum + (workOrderByStatus[status] ?? 0), 0);
+
+  return {
+    view: 'maintenance',
+    properties: { total: totalProperties },
+    buildings: { total: totalBuildings },
+    units: unitSummary,
+    owners: { total: totalOwners },
+    tenants: { total: totalTenants },
+    maintenance: { open: openMaintenance, emergency: emergencyOpen, byStatus: maintenanceByStatus },
+    workOrders: { open: openWorkOrders, byStatus: workOrderByStatus },
+    vendors: { total: totalVendors },
+    inspections: { upcoming: upcomingInspections, overdue: overdueInspections },
+  };
+}
+
 // Tenant view: their own lease/balance/requests only — never the
 // organization-wide figures above, even if they somehow held
 // `reports:read` (they don't, by default template — see
@@ -132,6 +188,10 @@ export async function getDashboard(organizationId, actingUser) {
   if (actingUser.roles.includes('tenant')) {
     const tenant = await findTenantByUserId(actingUser.id, organizationId);
     return getTenantDashboard(organizationId, tenant?.id ?? NO_MATCH_ID);
+  }
+
+  if (actingUser.roles.includes('maintenance_manager') && !actingUser.roles.some((r) => RICHER_DASHBOARD_ROLES.includes(r))) {
+    return getMaintenanceManagerDashboard(organizationId);
   }
 
   const scope = await getRestrictedScope(actingUser, organizationId);

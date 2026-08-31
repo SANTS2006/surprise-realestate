@@ -31,6 +31,27 @@ export function countInspectionsByOrganization(organizationId, { status, type, p
   return prisma.inspection.count({ where: buildInspectionListWhere(organizationId, { status, type, propertyId, propertyIds }) });
 }
 
+// Scheduled-but-not-yet-happened inspections due within [from, to] —
+// distinct from countOverdueInspections, which looks the other direction
+// (still scheduled but the date has already passed).
+export function countUpcomingInspections(organizationId, { propertyIds, from, to }) {
+  return prisma.inspection.count({
+    where: {
+      ...buildInspectionListWhere(organizationId, { status: 'scheduled', propertyIds }),
+      inspectionDate: { gte: from, lte: to },
+    },
+  });
+}
+
+export function countOverdueInspections(organizationId, { propertyIds }) {
+  return prisma.inspection.count({
+    where: {
+      ...buildInspectionListWhere(organizationId, { status: 'scheduled', propertyIds }),
+      inspectionDate: { lt: new Date() },
+    },
+  });
+}
+
 const UPDATABLE_INSPECTION_FIELDS = ['inspectionDate', 'inspectorId', 'condition', 'notes'];
 
 export function updateInspection(id, data) {
