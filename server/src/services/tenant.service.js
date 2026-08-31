@@ -2,12 +2,13 @@ import { AppError } from '../utils/AppError.js';
 import { buildPaginationMeta } from '../utils/pagination.js';
 import {
   createTenant, findTenantById, findTenantByUserId, findTenantsByOrganization,
-  countTenantsByOrganization, updateTenant, setTenantStatus,
+  countTenantsByOrganization, updateTenant, setTenantStatus, countTenantPropertyMatch,
 } from '../repositories/tenant.repository.js';
 import { findUserById } from '../repositories/user.repository.js';
 import { findBuildingById, findBuildingsByIds } from '../repositories/building.repository.js';
 import { findUnitById, findUnitsByIds } from '../repositories/unit.repository.js';
 import { getCoverImageUrls } from './document.service.js';
+import { getRestrictedScope } from './resourceAccess.service.js';
 import { audit } from './audit.service.js';
 
 function serializeTenant(tenant) {
@@ -69,7 +70,10 @@ async function resolveResidence(organizationId, { buildingId, unitId }) {
 }
 
 // A `tenant`-role caller only ever sees their own record (mirrors
-// owner.service.js's equivalent restriction).
+// owner.service.js's equivalent restriction). `agent`/`owner` callers see
+// only tenants whose current-residence building/unit falls within their
+// assigned/owned properties (getRestrictedScope -> propertyIds); org-wide
+// roles are unaffected (scope.propertyIds is undefined for them).
 export async function listTenants(organizationId, actingUser, { page, pageSize, skip, take, search, status, unitId, buildingId }) {
   if (actingUser.roles.includes('tenant') && !actingUser.roles.includes('administrator')) {
     const own = await findTenantByUserId(actingUser.id, organizationId);
@@ -77,9 +81,10 @@ export async function listTenants(organizationId, actingUser, { page, pageSize, 
     return { tenants, meta: buildPaginationMeta({ page: 1, pageSize: 1, total: own ? 1 : 0 }) };
   }
 
+  const scope = await getRestrictedScope(actingUser, organizationId);
   const [tenants, total] = await Promise.all([
-    findTenantsByOrganization(organizationId, { skip, take, search, status, unitId, buildingId }),
-    countTenantsByOrganization(organizationId, { search, status, unitId, buildingId }),
+    findTenantsByOrganization(organizationId, { skip, take, search, status, unitId, buildingId, propertyIds: scope.propertyIds }),
+    countTenantsByOrganization(organizationId, { search, status, unitId, buildingId, propertyIds: scope.propertyIds }),
   ]);
   const enriched = await attachTenantCardFields(organizationId, tenants.map(serializeTenant));
   return { tenants: enriched, meta: buildPaginationMeta({ page, pageSize, total }) };
@@ -89,8 +94,15 @@ export async function getTenant(id, organizationId, actingUser) {
   const tenant = await findTenantById(id, organizationId);
   if (!tenant) throw AppError.notFound('Tenant not found.');
 
-  if (actingUser.roles.includes('tenant') && !actingUser.roles.includes('administrator') && tenant.userId !== actingUser.id) {
-    throw AppError.notFound('Tenant not found.');
+  if (actingUser.roles.includes('tenant') && !actingUser.roles.includes('administrator')) {
+    if (tenant.userId !== actingUser.id) throw AppError.notFound('Tenant not found.');
+    return serializeTenant(tenant);
+  }
+
+  const scope = await getRestrictedScope(actingUser, organizationId);
+  if (scope.propertyIds) {
+    const matches = await countTenantPropertyMatch(tenant.id, scope.propertyIds);
+    if (matches === 0) throw AppError.notFound('Tenant not found.');
   }
   return serializeTenant(tenant);
 }

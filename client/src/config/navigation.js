@@ -12,15 +12,18 @@ export const NAV_SECTIONS = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
   {
     label: 'Properties', icon: Building2, to: '/properties',
-    roles: ['administrator', 'property_manager', 'agent', 'owner', 'accountant', 'maintenance_manager', 'auditor'],
+    roles: ['administrator', 'agent', 'owner', 'accountant', 'maintenance_manager', 'auditor'],
   },
-  { label: 'Tenants', icon: Users, to: '/tenants', roles: ['administrator', 'property_manager', 'agent', 'accountant', 'auditor'] },
-  { label: 'Owners', icon: UserCircle, to: '/owners', roles: ['administrator', 'property_manager', 'agent', 'accountant', 'auditor'] },
-  { label: 'Leases', icon: FileText, to: '/leases', roles: ['administrator', 'property_manager', 'agent', 'owner', 'accountant', 'auditor'] },
+  // owner now included — owner.service.js/tenant.service.js scope the list
+  // to tenants/owners tied to their own properties (see
+  // docs/security/authorization.md).
+  { label: 'Tenants', icon: Users, to: '/tenants', roles: ['administrator', 'agent', 'owner', 'accountant', 'auditor'] },
+  { label: 'Owners', icon: UserCircle, to: '/owners', roles: ['administrator', 'agent', 'accountant', 'auditor'] },
+  { label: 'Leases', icon: FileText, to: '/leases', roles: ['administrator', 'agent', 'owner', 'accountant', 'auditor'] },
   { label: 'My Lease', icon: FileText, to: '/my-lease', roles: ['tenant'] },
   {
     label: 'Finance', icon: Wallet,
-    roles: ['administrator', 'accountant', 'property_manager', 'owner', 'auditor'],
+    roles: ['administrator', 'accountant', 'agent', 'owner', 'auditor'],
     children: [
       { label: 'Invoices', to: '/invoices' },
       { label: 'Payments', to: '/payments' },
@@ -31,7 +34,7 @@ export const NAV_SECTIONS = [
   { label: 'My Payments', icon: Wallet, to: '/my-payments', roles: ['tenant'] },
   {
     label: 'Maintenance', icon: Wrench,
-    roles: ['administrator', 'property_manager', 'maintenance_manager', 'auditor'],
+    roles: ['administrator', 'agent', 'maintenance_manager', 'auditor'],
     children: [
       { label: 'Requests', to: '/maintenance' },
       { label: 'Work Orders', to: '/work-orders' },

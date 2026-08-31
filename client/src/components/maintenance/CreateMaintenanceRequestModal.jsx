@@ -18,7 +18,7 @@ import { maintenanceStaffFormSchema, maintenanceTenantFormSchema, PRIORITIES } f
 
 export function CreateMaintenanceRequestModal({ open, onClose, onSaved }) {
   const { user, hasRole } = useAuth();
-  const isTenant = hasRole('tenant') && !hasRole('administrator', 'property_manager', 'maintenance_manager');
+  const isTenant = hasRole('tenant') && !hasRole('administrator', 'agent', 'maintenance_manager');
   const [serverError, setServerError] = useState(null);
   const [pendingFiles, setPendingFiles] = useState([]);
 

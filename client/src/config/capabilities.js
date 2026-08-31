@@ -5,35 +5,37 @@
 // requirePermission middleware is the actual authorization boundary, and an
 // organization can edit its roles' permissions later, so a mismatch here is
 // a UX rough edge, never a security gap.
-export const CAN_CREATE_PROPERTIES = ['administrator', 'property_manager', 'agent'];
-export const CAN_UPDATE_PROPERTIES = ['administrator', 'property_manager', 'agent'];
+//
+// `agent` is the one assignment-scoped "manages specific properties" role
+// (property_manager was removed as redundant with it — see
+// docs/security/authorization.md). Every "manage" capability below that
+// used to list both now lists only `agent`.
+export const CAN_CREATE_PROPERTIES = ['administrator', 'agent'];
+export const CAN_UPDATE_PROPERTIES = ['administrator', 'agent'];
 export const CAN_DELETE_PROPERTIES = ['administrator'];
 
-export const CAN_MANAGE_BUILDINGS = ['administrator', 'property_manager'];
-export const CAN_MANAGE_UNITS = ['administrator', 'property_manager', 'agent'];
+export const CAN_MANAGE_BUILDINGS = ['administrator', 'agent'];
+export const CAN_MANAGE_UNITS = ['administrator', 'agent'];
 
-export const CAN_MANAGE_TENANTS = ['administrator', 'property_manager', 'agent'];
+export const CAN_MANAGE_TENANTS = ['administrator', 'agent'];
+// owner has no owners:* permission at all (they only ever see their own
+// record, self-scoped in owner.service.js) — administrator only here.
 export const CAN_MANAGE_OWNERS = ['administrator'];
 
-// leases:create/update/terminate/renew are all granted to the same two
-// roles in the default templates (agent has leases:read only, despite
-// managing tenants/units) — see server/src/constants/permissions.js.
-export const CAN_MANAGE_LEASES = ['administrator', 'property_manager'];
+export const CAN_MANAGE_LEASES = ['administrator', 'agent'];
 
 // Every mutation across invoices/payments/expenses (create, update, send,
 // void, refund, approve/reject/mark-paid, categories) maps to the same two
-// roles in the default templates — even property_manager is read-only on
-// all three. See server/src/constants/permissions.js's accountant/
-// property_manager templates.
+// roles in the default templates — agent and owner are both read-only here.
 export const CAN_MANAGE_FINANCE = ['administrator', 'accountant'];
 
 // Work orders / vendors / inspections, and updating (review/assign/cancel)
-// a maintenance request, are all granted to the same two roles.
-export const CAN_MANAGE_OPERATIONS = ['administrator', 'property_manager', 'maintenance_manager'];
+// a maintenance request, are all granted to the same roles.
+export const CAN_MANAGE_OPERATIONS = ['administrator', 'agent', 'maintenance_manager'];
 // Creating a maintenance request is additionally open to the tenant who's
 // reporting the issue (self-scoped to their own unit) — see
 // maintenanceRequest.service.js.
-export const CAN_CREATE_MAINTENANCE = ['administrator', 'property_manager', 'maintenance_manager', 'tenant'];
+export const CAN_CREATE_MAINTENANCE = ['administrator', 'agent', 'maintenance_manager', 'tenant'];
 
 // users:invite/update/change-role and roles are administrator-only in the
 // default templates — 'users'/'roles' resources appear in no other role's
@@ -56,15 +58,14 @@ export const CAN_MANAGE_ROLES = ['administrator'];
 export const CAN_MANAGE_ORGANIZATION = ['administrator'];
 export const CAN_VIEW_ORGANIZATION = ['administrator', 'auditor'];
 
-// reports:read — property_manager and owner hold it despite being
-// read-only/scoped everywhere else; maintenance_manager, agent, and tenant
-// do not have it at all.
-export const CAN_VIEW_REPORTS = ['administrator', 'property_manager', 'accountant', 'owner', 'auditor'];
+// reports:read — agent and owner hold it despite being read-only/scoped
+// everywhere else; maintenance_manager and tenant do not have it at all.
+export const CAN_VIEW_REPORTS = ['administrator', 'agent', 'accountant', 'owner', 'auditor'];
 
 // documents:create — accountant now has it too (finance readWrite includes
 // documents, matching their need to attach receipts to invoices/payments/
 // expenses); owner/tenant/auditor remain read-only.
-export const CAN_UPLOAD_DOCUMENTS = ['administrator', 'property_manager', 'agent', 'maintenance_manager', 'accountant'];
+export const CAN_UPLOAD_DOCUMENTS = ['administrator', 'agent', 'maintenance_manager', 'accountant'];
 // documents:delete — the readWrite() helper only grants read/create/update,
 // never delete, so only administrator (ALL permissions) can delete a file.
 export const CAN_DELETE_DOCUMENTS = ['administrator'];

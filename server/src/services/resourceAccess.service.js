@@ -22,7 +22,7 @@ import { findPropertiesByOrganization } from '../repositories/property.repositor
 // their `requirePermission` pass is the whole authorization check for
 // property-hierarchy resources; they never consult assignment/ownership.
 const ORG_WIDE_PROPERTY_ROLES = new Set(['administrator', 'accountant', 'maintenance_manager', 'auditor']);
-const ASSIGNMENT_SCOPED_ROLES = new Set(['property_manager', 'agent']);
+const ASSIGNMENT_SCOPED_ROLES = new Set(['agent']);
 
 // A "no Owner/Tenant record yet" scope must resolve to a filter that
 // guarantees zero rows — never omitting the filter (which would silently
@@ -74,8 +74,8 @@ export async function assertOwnTenantRecord(tenantId, actingUser) {
 //   { tenantId }     - self-scoped (tenant); NO_MATCH_ID if they have no
 //                       Tenant record yet, which must resolve to zero rows,
 //                       never "no filter" (org-wide).
-//   { propertyIds }  - assignment- or ownership-scoped (property_manager,
-//                       agent, owner); always an array, possibly empty.
+//   { propertyIds }  - assignment- or ownership-scoped (agent, owner);
+//                       always an array, possibly empty.
 //   {}               - org-wide (administrator/accountant/
 //                       maintenance_manager/auditor) — no extra filter.
 export async function getRestrictedScope(actingUser, organizationId) {

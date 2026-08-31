@@ -73,8 +73,8 @@ async function getStaffDashboard(organizationId, propertyIds) {
     countMaintenanceRequestsByOrganization(organizationId, { status: OPEN_MAINTENANCE_STATUSES, propertyIds }),
     countMaintenanceRequestsByOrganization(organizationId, { status: OPEN_MAINTENANCE_STATUSES, priority: 'emergency', propertyIds }),
     findPaymentsByOrganization(organizationId, { skip: 0, take: 5, propertyIds }),
-    countTenantsByOrganization(organizationId, {}),
-    countOwnersByOrganization(organizationId, {}),
+    countTenantsByOrganization(organizationId, { propertyIds }),
+    countOwnersByOrganization(organizationId, { propertyIds }),
     findCompletedPaymentsSince(organizationId, { propertyIds, from: trendStart }),
     findApprovedExpensesSince(organizationId, { propertyIds, from: trendStart }),
   ]);

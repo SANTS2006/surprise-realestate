@@ -50,14 +50,6 @@ export const DEFAULT_ROLE_TEMPLATES = {
     description: 'Full access within the organization.',
     permissions: ALL,
   },
-  property_manager: {
-    description: 'Manages assigned properties, units, tenants, and leases.',
-    permissions: [
-      ...readWrite(['properties', 'buildings', 'units', 'tenants', 'leases', 'maintenance', 'work-orders', 'inspections', 'vendors', 'documents', 'notifications']),
-      ...readOnly(['invoices', 'payments', 'expenses', 'owners', 'reports']),
-      'leases:terminate', 'leases:renew', 'documents:download',
-    ],
-  },
   accountant: {
     description: 'Manages invoicing, payments, expenses, and financial reporting.',
     permissions: [
@@ -75,13 +67,28 @@ export const DEFAULT_ROLE_TEMPLATES = {
       'documents:download',
     ],
   },
+  // Read-only and scoped to properties they own (Property.ownerId) — see
+  // resourceAccess.service.js's `getRestrictedScope` for the ownerId->
+  // propertyIds resolution, consumed by owner.service.js/tenant.service.js/
+  // lease.service.js/etc. to filter every list down to their own portfolio.
+  // Deliberately has no `owners:*` beyond their own record (owner.service.js
+  // self-scopes that regardless of permission) — they have no reason to
+  // browse other owners.
   owner: {
     description: 'Read-only access to their own properties and financial reports.',
-    permissions: [...readOnly(['owners', 'properties', 'buildings', 'units', 'leases', 'invoices', 'payments', 'expenses', 'reports', 'documents', 'maintenance']), 'documents:download'],
+    permissions: [...readOnly(['properties', 'buildings', 'units', 'tenants', 'leases', 'invoices', 'payments', 'expenses', 'reports', 'documents', 'maintenance']), 'documents:download'],
   },
+  // The one assignment-scoped "manages specific properties" role (formerly
+  // split with property_manager, which was removed as redundant — this
+  // absorbed its full permission set). Scoped via PropertyAssignment, not
+  // ownership — see ASSIGNMENT_SCOPED_ROLES in resourceAccess.service.js.
   agent: {
-    description: 'Manages assigned properties and listings.',
-    permissions: [...readWrite(['properties', 'units', 'tenants', 'documents']), ...readOnly(['leases', 'owners']), 'documents:download'],
+    description: 'Manages assigned properties, units, tenants, and leases.',
+    permissions: [
+      ...readWrite(['properties', 'buildings', 'units', 'tenants', 'leases', 'maintenance', 'work-orders', 'inspections', 'vendors', 'documents', 'notifications']),
+      ...readOnly(['invoices', 'payments', 'expenses', 'owners', 'reports']),
+      'leases:terminate', 'leases:renew', 'documents:download',
+    ],
   },
   tenant: {
     description: "Access to their own lease, invoices, payments, documents, and maintenance requests.",

@@ -2,11 +2,12 @@ import { AppError } from '../utils/AppError.js';
 import { buildPaginationMeta } from '../utils/pagination.js';
 import {
   createOwner, findOwnerById, findOwnerByUserId, findOwnersByOrganization,
-  countOwnersByOrganization, updateOwner, setOwnerStatus,
+  countOwnersByOrganization, updateOwner, setOwnerStatus, countOwnerPropertiesInScope,
 } from '../repositories/owner.repository.js';
 import { countPropertiesGroupedByOwner } from '../repositories/property.repository.js';
 import { findUserById } from '../repositories/user.repository.js';
 import { getCoverImageUrls } from './document.service.js';
+import { getRestrictedScope } from './resourceAccess.service.js';
 import { audit } from './audit.service.js';
 
 function serializeOwner(owner) {
@@ -38,9 +39,12 @@ async function attachOwnerCardFields(organizationId, owners) {
   }));
 }
 
-// An `owner`-role caller only ever sees their own record; every other role
-// with `owners:read` (administrator, accountant, agent, auditor) sees the
-// full organization directory. See docs/security/authorization.md.
+// An `owner`-role caller only ever sees their own record — they have no
+// reason to browse other owners at all. An `agent` sees only owners who
+// have at least one property within their assigned scope (getRestrictedScope
+// -> propertyIds). Org-wide roles (administrator, accountant,
+// maintenance_manager, auditor) see the full directory, unchanged. See
+// docs/security/authorization.md.
 export async function listOwners(organizationId, actingUser, { page, pageSize, skip, take, search, status }) {
   if (actingUser.roles.includes('owner') && !actingUser.roles.includes('administrator')) {
     const own = await findOwnerByUserId(actingUser.id, organizationId);
@@ -48,9 +52,10 @@ export async function listOwners(organizationId, actingUser, { page, pageSize, s
     return { owners, meta: buildPaginationMeta({ page: 1, pageSize: 1, total: own ? 1 : 0 }) };
   }
 
+  const scope = await getRestrictedScope(actingUser, organizationId);
   const [owners, total] = await Promise.all([
-    findOwnersByOrganization(organizationId, { skip, take, search, status }),
-    countOwnersByOrganization(organizationId, { search, status }),
+    findOwnersByOrganization(organizationId, { skip, take, search, status, propertyIds: scope.propertyIds }),
+    countOwnersByOrganization(organizationId, { search, status, propertyIds: scope.propertyIds }),
   ]);
   const enriched = await attachOwnerCardFields(organizationId, owners.map(serializeOwner));
   return { owners: enriched, meta: buildPaginationMeta({ page, pageSize, total }) };
@@ -60,8 +65,15 @@ export async function getOwner(id, organizationId, actingUser) {
   const owner = await findOwnerById(id, organizationId);
   if (!owner) throw AppError.notFound('Owner not found.');
 
-  if (actingUser.roles.includes('owner') && !actingUser.roles.includes('administrator') && owner.userId !== actingUser.id) {
-    throw AppError.notFound('Owner not found.');
+  if (actingUser.roles.includes('owner') && !actingUser.roles.includes('administrator')) {
+    if (owner.userId !== actingUser.id) throw AppError.notFound('Owner not found.');
+    return serializeOwner(owner);
+  }
+
+  const scope = await getRestrictedScope(actingUser, organizationId);
+  if (scope.propertyIds) {
+    const matches = await countOwnerPropertiesInScope(owner.id, scope.propertyIds);
+    if (matches === 0) throw AppError.notFound('Owner not found.');
   }
   return serializeOwner(owner);
 }
