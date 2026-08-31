@@ -225,6 +225,7 @@ model Organization {
   auditLogs           AuditLog[]
   auditRemarks        AuditRemark[]
   propertyAssignments PropertyAssignment[]
+  tenantMessages      TenantMessage[]
 
   @@map("organizations")
 }
@@ -266,6 +267,7 @@ model User {
   emailVerificationTokens  EmailVerificationToken[]
   mfaRecoveryCodes         MfaRecoveryCode[]
   propertyAssignments      PropertyAssignment[]
+  tenantMessagesReceived   TenantMessage[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -424,6 +426,7 @@ model Property {
   maintenanceRequests MaintenanceRequest[]
   inspections  Inspection[]
   assignments  PropertyAssignment[]
+  tenantMessages TenantMessage[]
 
   @@unique([organizationId, propertyCode])
   @@index([organizationId])
@@ -543,6 +546,7 @@ model Tenant {
   invoices     Invoice[]
   payments     Payment[]
   maintenanceRequests MaintenanceRequest[]
+  messagesSent        TenantMessage[]
 
   @@index([organizationId])
   @@index([buildingId])
@@ -868,4 +872,28 @@ model AuditRemark {
 
   @@index([organizationId])
   @@map("audit_remarks")
+}
+
+// One-directional: a tenant composes, the assigned agent(s) for their
+// property receive it (in-app + email, see tenantMessage.service.js).
+// No reply/thread support yet — a natural follow-up, not built here.
+model TenantMessage {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  recipientId    String    @map("recipient_id") @db.Uuid
+  propertyId     String    @map("property_id") @db.Uuid
+  content        String
+  readAt         DateTime? @map("read_at") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  recipient    User         @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  property     Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([tenantId])
+  @@index([recipientId])
+  @@map("tenant_messages")
 }

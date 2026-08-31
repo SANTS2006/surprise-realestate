@@ -14,6 +14,17 @@ export function findAssignmentsForProperty(propertyId, organizationId) {
   });
 }
 
+// Narrows findAssignmentsForProperty to just the assigned users who
+// actually hold the `agent` role — a property can have staff assigned for
+// other reasons (e.g. an inspector picked from the same assignment list),
+// but a tenant's message should only ever reach the property's manager(s).
+export function findAgentAssignmentsForProperty(propertyId, organizationId) {
+  return prisma.propertyAssignment.findMany({
+    where: { propertyId, organizationId, user: { userRoles: { some: { role: { name: 'agent' } } } } },
+    include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
+  });
+}
+
 export function assignUserToProperty(propertyId, userId, organizationId) {
   return prisma.propertyAssignment.upsert({
     where: { propertyId_userId: { propertyId, userId } },

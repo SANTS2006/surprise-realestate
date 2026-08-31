@@ -1,5 +1,5 @@
 import {
-  Home, LayoutDashboard, Building2, Users, UserCircle, FileText, Wallet, Wrench, Bell, ShieldCheck, History, Settings,
+  Home, LayoutDashboard, Building2, Users, UserCircle, FileText, Wallet, Wrench, Bell, ShieldCheck, History, Settings, MessageSquare,
 } from 'lucide-react';
 
 // Permission-aware navigation (§77 of the requirements): `roles` narrows
@@ -43,6 +43,8 @@ export const NAV_SECTIONS = [
     ],
   },
   { label: 'Maintenance', icon: Wrench, to: '/maintenance', roles: ['tenant'] },
+  { label: 'Message Manager', icon: MessageSquare, to: '/message-manager', roles: ['tenant'] },
+  { label: 'Tenant Messages', icon: MessageSquare, to: '/tenant-messages', roles: ['administrator', 'agent'] },
   { label: 'Notifications', icon: Bell, to: '/notifications' },
   { label: 'Users & Roles', icon: ShieldCheck, to: '/users', roles: ['administrator', 'auditor'] },
   { label: 'Audit Logs', icon: History, to: '/audit-logs', roles: ['administrator', 'auditor'] },

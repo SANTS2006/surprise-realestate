@@ -85,6 +85,12 @@ export const CAN_CREATE_AUDIT_REMARKS = ['administrator', 'auditor'];
 // honoring the `all=true` query flag.
 export const CAN_VIEW_ALL_NOTIFICATIONS = ['administrator'];
 
+// tenant-messages:create/read — a tenant composes, the assigned agent(s)
+// for their property (plus administrator, org-wide) read. See
+// tenantMessage.service.js; not a standard resource CRUD split.
+export const CAN_SEND_TENANT_MESSAGE = ['tenant'];
+export const CAN_VIEW_TENANT_MESSAGES = ['administrator', 'agent'];
+
 export function canAny(roles, allowedRoles) {
   return roles.some((r) => allowedRoles.includes(r));
 }

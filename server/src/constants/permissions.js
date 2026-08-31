@@ -25,6 +25,11 @@ const SPECIAL_PERMISSIONS = [
   'documents:download',
   'users:invite',
   'users:change-role',
+  // Not standard resource CRUD — a tenant composes (never reads back an
+  // inbox of their own) and an agent/administrator reads (never creates,
+  // there's no reply yet). See tenantMessage.service.js.
+  'tenant-messages:create',
+  'tenant-messages:read',
 ];
 
 export const PERMISSIONS = [
@@ -87,14 +92,14 @@ export const DEFAULT_ROLE_TEMPLATES = {
     permissions: [
       ...readWrite(['properties', 'buildings', 'units', 'tenants', 'leases', 'maintenance', 'work-orders', 'inspections', 'vendors', 'documents', 'notifications']),
       ...readOnly(['invoices', 'payments', 'expenses', 'owners', 'reports']),
-      'leases:terminate', 'leases:renew', 'documents:download',
+      'leases:terminate', 'leases:renew', 'documents:download', 'tenant-messages:read',
     ],
   },
   tenant: {
     description: "Access to their own lease, invoices, payments, documents, and maintenance requests.",
     permissions: [
       ...readOnly(['tenants', 'leases', 'invoices', 'payments', 'documents']),
-      'maintenance:read', 'maintenance:create', 'documents:download',
+      'maintenance:read', 'maintenance:create', 'documents:download', 'tenant-messages:create',
     ],
   },
   auditor: {

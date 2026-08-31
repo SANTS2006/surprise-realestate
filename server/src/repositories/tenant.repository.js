@@ -74,6 +74,22 @@ export function countTenantPropertyMatch(tenantId, propertyIds) {
   });
 }
 
+// Resolves a tenant's current property via the same building/unit
+// convenience link buildTenantListWhere scopes by above — used by
+// tenantMessage.service.js to find who a tenant's message should reach.
+// Returns null for a tenant with neither link set, same "resolves to
+// nothing" posture as the rest of this file.
+export async function findPropertyIdForTenant(tenantId, organizationId) {
+  const tenant = await prisma.tenant.findFirst({
+    where: { id: tenantId, organizationId },
+    select: {
+      building: { select: { propertyId: true } },
+      unit: { select: { building: { select: { propertyId: true } } } },
+    },
+  });
+  return tenant?.building?.propertyId ?? tenant?.unit?.building?.propertyId ?? null;
+}
+
 // Single-tenant lookup for "who lives here" scenarios (e.g. auto-loading
 // the resident to notify when scheduling an inspection) — a unit is
 // expected to have at most one current tenant, so this returns the first
