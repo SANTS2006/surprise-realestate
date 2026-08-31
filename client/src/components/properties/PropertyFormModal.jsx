@@ -65,7 +65,7 @@ export function PropertyFormModal({ open, onClose, onSaved, property }) {
     <Modal open={open} onClose={onClose} title={isEdit ? 'Edit property' : 'New property'} size="lg">
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Property code" required disabled={isEdit} hint={isEdit ? 'Property code cannot be changed.' : undefined} error={errors.propertyCode?.message} {...register('propertyCode')} />
           <Field label="Property type" required list="property-types" error={errors.propertyType?.message} {...register('propertyType')} />
           <datalist id="property-types">
@@ -75,12 +75,12 @@ export function PropertyFormModal({ open, onClose, onSaved, property }) {
         <Field label="Property name" required error={errors.name?.message} {...register('name')} />
         <TextareaField label="Description" error={errors.description?.message} {...register('description')} />
         <Field label="Address" required error={errors.address?.message} {...register('address')} />
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="City" error={errors.city?.message} {...register('city')} />
           <Field label="Region / State" error={errors.region?.message} {...register('region')} />
           <Field label="Country" error={errors.country?.message} {...register('country')} />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="Latitude" type="number" step="any" error={errors.latitude?.message} {...register('latitude')} />
           <Field label="Longitude" type="number" step="any" error={errors.longitude?.message} {...register('longitude')} />
           <Field label="Year built" type="number" step="1" error={errors.yearBuilt?.message} {...register('yearBuilt')} />

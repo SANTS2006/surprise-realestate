@@ -36,7 +36,7 @@ export function ChangePasswordForm() {
         {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
           <Field label="Current password" type="password" autoComplete="current-password" required error={errors.currentPassword?.message} {...register('currentPassword')} />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field
               label="New password"
               type="password"

@@ -56,7 +56,7 @@ export function UserProfileModal({ open, onClose, user, roles, canManage, isSelf
         </div>
       </div>
 
-      <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
+      <dl className="mt-6 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-slate-500 dark:text-slate-400">Phone</dt>
           <dd className="text-slate-900 dark:text-slate-100">{user.phone ?? '—'}</dd>

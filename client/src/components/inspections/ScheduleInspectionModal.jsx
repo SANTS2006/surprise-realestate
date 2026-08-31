@@ -91,7 +91,7 @@ export function ScheduleInspectionModal({ open, onClose, onSaved }) {
     <Modal open={open} onClose={onClose} title="Schedule inspection" size="lg">
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <SelectField label="Property" required error={errors.propertyId?.message} {...register('propertyId')}>
             <option value="">Select a property…</option>
             {properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -105,7 +105,7 @@ export function ScheduleInspectionModal({ open, onClose, onSaved }) {
             {units.map((u) => <option key={u.id} value={u.id}>Unit {u.unitNumber}</option>)}
           </SelectField>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <SelectField label="Inspector (optional)" disabled={!propertyId} error={errors.inspectorId?.message} {...register('inspectorId')}>
             <option value="">Unassigned</option>
             {staff.map((s) => <option key={s.userId} value={s.userId}>{s.firstName} {s.lastName}</option>)}

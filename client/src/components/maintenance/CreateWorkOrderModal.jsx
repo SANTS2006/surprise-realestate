@@ -49,7 +49,7 @@ export function CreateWorkOrderModal({ open, onClose, onSaved, request }) {
           <option value="">No staff assigned</option>
           {staff.map((s) => <option key={s.userId} value={s.userId}>{s.firstName} {s.lastName}</option>)}
         </SelectField>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Scheduled date" type="date" hint="Sets the request to scheduled" error={errors.scheduledDate?.message} {...register('scheduledDate')} />
           <Field label="Estimated cost" type="number" step="0.01" error={errors.estimatedCost?.message} {...register('estimatedCost')} />
         </div>

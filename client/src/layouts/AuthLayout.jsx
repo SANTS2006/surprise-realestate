@@ -1,6 +1,7 @@
 import { Building2, ShieldCheck, TrendingUp } from 'lucide-react';
 import { Logo } from '../components/ui/Logo.jsx';
 import { ThemeToggle } from '../components/ui/ThemeToggle.jsx';
+import { useDocumentTitle } from '../hooks/useDocumentTitle.js';
 
 const HIGHLIGHTS = [
   { icon: Building2, text: 'Manage properties, leases & tenants in one place' },
@@ -15,6 +16,8 @@ const HIGHLIGHTS = [
 // route) restarts the entrance animation on every navigation between auth
 // screens, which is what reads as a transition between them.
 export function AuthLayout({ title, description, children, footer }) {
+  useDocumentTitle(title);
+
   return (
     <div className="custom-scrollbar flex h-screen overflow-y-auto bg-gradient-to-br from-slate-50 via-brand-50/40 to-accent-50/30 dark:from-slate-950 dark:via-brand-950/40 dark:to-slate-900">
       {/* Brand panel — desktop only */}

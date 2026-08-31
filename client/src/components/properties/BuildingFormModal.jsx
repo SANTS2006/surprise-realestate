@@ -51,7 +51,7 @@ export function BuildingFormModal({ open, onClose, onSaved, propertyId, building
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
         <Field label="Building name" required error={errors.name?.message} {...register('name')} />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Code" error={errors.code?.message} {...register('code')} />
           <Field label="Floors" type="number" step="1" error={errors.floors?.message} {...register('floors')} />
         </div>

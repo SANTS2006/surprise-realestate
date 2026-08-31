@@ -132,7 +132,7 @@ function DisableForm({ onCancel, onDisabled }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">
       {serverError && <Alert variant="error">{serverError}</Alert>}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Current password" type="password" autoComplete="current-password" required error={errors.password?.message} {...register('password')} />
         <Field label="Authentication code" autoComplete="one-time-code" required error={errors.code?.message} {...register('code')} />
       </div>

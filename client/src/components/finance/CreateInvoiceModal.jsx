@@ -47,7 +47,7 @@ export function CreateInvoiceModal({ open, onClose, onSaved }) {
     <Modal open={open} onClose={onClose} title="New invoice" description="New invoices start as a draft — send it once ready." size="lg">
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <SelectField label="Tenant" required error={errors.tenantId?.message} {...register('tenantId')}>
             <option value="">Select a tenant…</option>
             {tenants.map((t) => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
@@ -57,11 +57,11 @@ export function CreateInvoiceModal({ open, onClose, onSaved }) {
             {leases.map((l) => <option key={l.id} value={l.id}>Unit {l.unit?.unitNumber} — {l.status}</option>)}
           </SelectField>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Issue date" type="date" required error={errors.issueDate?.message} {...register('issueDate')} />
           <Field label="Due date" type="date" required error={errors.dueDate?.message} {...register('dueDate')} />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Subtotal" type="number" step="0.01" required error={errors.subtotal?.message} {...register('subtotal')} />
           <Field label="Tax" type="number" step="0.01" error={errors.tax?.message} {...register('tax')} />
         </div>

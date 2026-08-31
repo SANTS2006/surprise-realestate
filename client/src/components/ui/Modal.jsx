@@ -1,19 +1,49 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import clsx from 'clsx';
 
+const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function Modal({ open, onClose, title, description, children, size = 'md' }) {
+  const dialogRef = useRef(null);
+  const previouslyFocusedRef = useRef(null);
+
   useEffect(() => {
     if (!open) return;
+    // Keyboard-accessible dialog: move focus in on open, trap Tab/Shift+Tab
+    // inside while open, and return focus to whatever triggered it on close
+    // — otherwise focus silently stays on (or falls back to) the page body.
+    previouslyFocusedRef.current = document.activeElement;
+    const dialog = dialogRef.current;
+    const firstFocusable = dialog?.querySelector(FOCUSABLE_SELECTOR);
+    (firstFocusable ?? dialog)?.focus();
+
     function onKeyDown(e) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab' || !dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll(FOCUSABLE_SELECTOR)).filter((el) => el.offsetParent !== null);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
+
     document.addEventListener('keydown', onKeyDown);
     document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = '';
+      previouslyFocusedRef.current?.focus?.();
     };
   }, [open, onClose]);
 
@@ -24,7 +54,7 @@ export function Modal({ open, onClose, title, description, children, size = 'md'
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div className="absolute inset-0 bg-slate-950/60" onClick={onClose} aria-hidden="true" />
-      <div className={clsx('relative w-full rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900', sizeClass)}>
+      <div ref={dialogRef} tabIndex={-1} className={clsx('relative w-full rounded-xl border border-slate-200 bg-white shadow-xl focus:outline-none dark:border-slate-800 dark:bg-slate-900', sizeClass)}>
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4 dark:border-slate-800">
           <div>
             <h2 id="modal-title" className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h2>

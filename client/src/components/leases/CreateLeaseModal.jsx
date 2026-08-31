@@ -76,7 +76,7 @@ export function CreateLeaseModal({ open, onClose, onSaved }) {
           {tenants.map((t) => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
         </SelectField>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <SelectField label="Property" value={propertyId} onChange={(e) => setPropertyId(e.target.value)}>
             <option value="">Select a property…</option>
             {properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -94,11 +94,11 @@ export function CreateLeaseModal({ open, onClose, onSaved }) {
           <p className="-mt-2 text-xs text-amber-600 dark:text-amber-400">No available units in this building.</p>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Start date" type="date" required error={errors.startDate?.message} {...register('startDate')} />
           <Field label="End date" type="date" required error={errors.endDate?.message} {...register('endDate')} />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="Monthly rent" type="number" step="0.01" required error={errors.monthlyRent?.message} {...register('monthlyRent')} />
           <Field label="Security deposit" type="number" step="0.01" error={errors.securityDeposit?.message} {...register('securityDeposit')} />
           <Field label="Rent due day" type="number" step="1" placeholder="1" hint="Day of month (1–28)" error={errors.paymentDueDay?.message} {...register('paymentDueDay')} />

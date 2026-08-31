@@ -72,7 +72,7 @@ export function RecordPaymentModal({ open, onClose, onSaved, presetInvoice }) {
             Invoice <span className="font-medium text-slate-900 dark:text-slate-100">{presetInvoice.invoiceNumber}</span> — outstanding balance {formatCurrency(presetInvoice.balance)}
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <SelectField label="Tenant" required error={errors.tenantId?.message} {...register('tenantId')}>
               <option value="">Select a tenant…</option>
               {tenants.map((t) => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
@@ -84,11 +84,11 @@ export function RecordPaymentModal({ open, onClose, onSaved, presetInvoice }) {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Amount" type="number" step="0.01" required error={errors.amount?.message} {...register('amount')} />
           <Field label="Payment date" type="date" hint="Defaults to today" error={errors.paymentDate?.message} {...register('paymentDate')} />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <SelectField label="Payment method" required error={errors.paymentMethod?.message} {...register('paymentMethod')}>
             <option value="">Select a method…</option>
             {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}

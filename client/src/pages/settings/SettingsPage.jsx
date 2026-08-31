@@ -41,14 +41,14 @@ function AccountTab() {
         <CardHeader>
           <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Profile</h2>
         </CardHeader>
-        <CardBody className="grid grid-cols-2 gap-4 text-sm">
+        <CardBody className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-slate-500 dark:text-slate-400">Name</dt>
             <dd className="text-slate-900 dark:text-slate-100">{user?.firstName} {user?.lastName}</dd>
           </div>
-          <div>
+          <div className="min-w-0">
             <dt className="text-slate-500 dark:text-slate-400">Email</dt>
-            <dd className="text-slate-900 dark:text-slate-100">{user?.email}</dd>
+            <dd className="break-words text-slate-900 dark:text-slate-100">{user?.email}</dd>
           </div>
           <div>
             <dt className="text-slate-500 dark:text-slate-400">Role</dt>

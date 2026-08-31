@@ -46,11 +46,11 @@ export function RenewLeaseModal({ open, onClose, onSaved, lease }) {
     >
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="New start date" type="date" hint={`Defaults to current end date (${toDateInput(lease.endDate)})`} error={errors.startDate?.message} {...register('startDate')} />
           <Field label="New end date" type="date" required error={errors.endDate?.message} {...register('endDate')} />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="Monthly rent" type="number" step="0.01" error={errors.monthlyRent?.message} {...register('monthlyRent')} />
           <Field label="Security deposit" type="number" step="0.01" error={errors.securityDeposit?.message} {...register('securityDeposit')} />
           <Field label="Rent due day" type="number" step="1" hint="Day of month (1–28)" error={errors.paymentDueDay?.message} {...register('paymentDueDay')} />

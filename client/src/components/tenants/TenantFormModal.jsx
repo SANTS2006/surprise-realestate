@@ -80,7 +80,7 @@ function ResidencePicker({ register, watch, setValue, initialBuildingId, initial
   }, [initialBuildingId, properties, propertyId]);
 
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <SelectField
         label="Property"
         value={propertyId}
@@ -218,11 +218,11 @@ export function TenantFormModal({ open, onClose, onSaved, tenant }) {
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
       {liveTenant && <StatusControl tenant={liveTenant} onChanged={(updated) => { setLiveTenant(updated); onSaved(); }} />}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-4 flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="First name" required error={errors.firstName?.message} {...register('firstName')} />
           <Field label="Last name" required error={errors.lastName?.message} {...register('lastName')} />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Email" type="email" error={errors.email?.message} {...register('email')} />
           <Field label="Phone" error={errors.phone?.message} {...register('phone')} />
         </div>
@@ -234,7 +234,7 @@ export function TenantFormModal({ open, onClose, onSaved, tenant }) {
 
         <div className="border-t border-slate-200 pt-4 dark:border-slate-800">
           <p className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">Emergency contact (optional)</p>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field label="Name" error={errors.emergencyContactName?.message} {...register('emergencyContactName')} />
             <Field label="Phone" error={errors.emergencyContactPhone?.message} {...register('emergencyContactPhone')} />
             <Field label="Relationship" error={errors.emergencyContactRelationship?.message} {...register('emergencyContactRelationship')} />

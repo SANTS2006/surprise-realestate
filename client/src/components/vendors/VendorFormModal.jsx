@@ -90,15 +90,15 @@ export function VendorFormModal({ open, onClose, onSaved, vendor }) {
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
       {liveVendor && <StatusControl vendor={liveVendor} onChanged={(updated) => { setLiveVendor(updated); onSaved(); }} />}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Vendor name" required error={errors.name?.message} {...register('name')} />
           <Field label="Service type" placeholder="e.g. Plumbing, Electrical" error={errors.serviceType?.message} {...register('serviceType')} />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Contact person" error={errors.contactPerson?.message} {...register('contactPerson')} />
           <Field label="Phone" error={errors.phone?.message} {...register('phone')} />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Email" type="email" error={errors.email?.message} {...register('email')} />
           <Field label="Address" error={errors.address?.message} {...register('address')} />
         </div>

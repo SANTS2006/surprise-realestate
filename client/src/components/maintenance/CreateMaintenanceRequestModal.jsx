@@ -96,7 +96,7 @@ export function CreateMaintenanceRequestModal({ open, onClose, onSaved }) {
           </SelectField>
         ) : (
           <>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <SelectField label="Property" required error={errors.propertyId?.message} {...register('propertyId')}>
                 <option value="">Select a property…</option>
                 {properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}

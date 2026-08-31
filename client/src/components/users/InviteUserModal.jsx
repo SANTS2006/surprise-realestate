@@ -36,7 +36,7 @@ export function InviteUserModal({ open, onClose, onSaved }) {
     <Modal open={open} onClose={onClose} title="Invite user" description="They'll receive an email with a link to set their password and activate their account.">
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="First name" required error={errors.firstName?.message} {...register('firstName')} />
           <Field label="Last name" required error={errors.lastName?.message} {...register('lastName')} />
         </div>

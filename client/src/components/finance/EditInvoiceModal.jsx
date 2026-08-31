@@ -41,7 +41,7 @@ export function EditInvoiceModal({ open, onClose, onSaved, invoice }) {
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
         <Field label="Due date" type="date" error={errors.dueDate?.message} {...register('dueDate')} />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Subtotal" type="number" step="0.01" error={errors.subtotal?.message} {...register('subtotal')} />
           <Field label="Tax" type="number" step="0.01" error={errors.tax?.message} {...register('tax')} />
         </div>

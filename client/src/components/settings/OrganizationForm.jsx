@@ -60,16 +60,16 @@ export function OrganizationForm({ canManage }) {
         {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
           <fieldset disabled={!canManage} className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Organization name" required error={errors.name?.message} {...register('name')} />
               <Field label="Legal name" error={errors.legalName?.message} {...register('legalName')} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Registration number" error={errors.registrationNumber?.message} {...register('registrationNumber')} />
               <Field label="Phone" error={errors.phone?.message} {...register('phone')} />
             </div>
             <Field label="Address" error={errors.address?.message} {...register('address')} />
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <Field label="City" error={errors.city?.message} {...register('city')} />
               <Field label="Region / State" error={errors.region?.message} {...register('region')} />
               <Field label="Country" error={errors.country?.message} {...register('country')} />

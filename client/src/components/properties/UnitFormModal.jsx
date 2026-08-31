@@ -60,16 +60,16 @@ export function UnitFormModal({ open, onClose, onSaved, buildingId, unit }) {
     <Modal open={open} onClose={onClose} title={isEdit ? 'Edit unit' : 'New unit'} size="lg">
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Unit number" required error={errors.unitNumber?.message} {...register('unitNumber')} />
           <Field label="Unit type" placeholder="e.g. Studio, 2BR" error={errors.unitType?.message} {...register('unitType')} />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="Floor" type="number" step="1" error={errors.floor?.message} {...register('floor')} />
           <Field label="Bedrooms" type="number" step="1" error={errors.bedrooms?.message} {...register('bedrooms')} />
           <Field label="Bathrooms" type="number" step="1" error={errors.bathrooms?.message} {...register('bathrooms')} />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="Area (sq ft)" type="number" step="any" error={errors.area?.message} {...register('area')} />
           <Field label="Monthly rent" required type="number" step="0.01" error={errors.monthlyRent?.message} {...register('monthlyRent')} />
           <Field label="Security deposit" type="number" step="0.01" error={errors.securityDeposit?.message} {...register('securityDeposit')} />

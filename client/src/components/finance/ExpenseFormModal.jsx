@@ -58,7 +58,7 @@ export function ExpenseFormModal({ open, onClose, onSaved }) {
             <option value="">No specific property</option>
             {properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </SelectField>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Amount" type="number" step="0.01" required error={errors.amount?.message} {...register('amount')} />
             <Field label="Expense date" type="date" required error={errors.expenseDate?.message} {...register('expenseDate')} />
           </div>

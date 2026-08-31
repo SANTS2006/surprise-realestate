@@ -45,11 +45,11 @@ export function EditLeaseModal({ open, onClose, onSaved, lease }) {
     <Modal open={open} onClose={onClose} title="Edit lease" description={`Unit ${lease.unit?.unitNumber} · ${lease.tenant?.firstName} ${lease.tenant?.lastName}`}>
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Monthly rent" type="number" step="0.01" error={errors.monthlyRent?.message} {...register('monthlyRent')} />
           <Field label="Security deposit" type="number" step="0.01" error={errors.securityDeposit?.message} {...register('securityDeposit')} />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Rent due day" type="number" step="1" hint="Day of month (1–28)" error={errors.paymentDueDay?.message} {...register('paymentDueDay')} />
           <Field label="End date" type="date" error={errors.endDate?.message} {...register('endDate')} />
         </div>
