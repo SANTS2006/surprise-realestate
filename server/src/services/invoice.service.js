@@ -8,6 +8,7 @@ import { findTenantById } from '../repositories/tenant.repository.js';
 import { findLeaseById } from '../repositories/lease.repository.js';
 import { assertPropertyAccess, getRestrictedScope } from './resourceAccess.service.js';
 import { audit } from './audit.service.js';
+import { notify } from './notification.service.js';
 
 function round2(n) {
   return Math.round(Number(n) * 100) / 100;
@@ -192,6 +193,12 @@ export async function sendInvoice(id, organizationId, actingUser, req) {
 
   await setInvoiceStatus(id, 'sent');
   await audit({ organizationId, userId: actingUser.id, action: 'invoice.sent', entityType: 'invoice', entityId: id, newValues: { status: 'sent' }, req });
+  if (invoice.tenant?.userId) {
+    await notify({
+      organizationId, userId: invoice.tenant.userId, type: 'invoice_sent',
+      title: 'New invoice', message: `Invoice ${invoice.invoiceNumber} for ${invoice.total} is now due ${new Date(invoice.dueDate).toLocaleDateString()}.`,
+    });
+  }
   return getInvoice(id, organizationId, actingUser);
 }
 

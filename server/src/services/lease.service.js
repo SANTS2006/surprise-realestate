@@ -7,8 +7,11 @@ import {
 } from '../repositories/lease.repository.js';
 import { findUnitById, setUnitStatus } from '../repositories/unit.repository.js';
 import { findTenantById, findTenantByUserId } from '../repositories/tenant.repository.js';
+import { findOwnerById } from '../repositories/owner.repository.js';
+import { findAssignmentsForProperty } from '../repositories/propertyAssignment.repository.js';
 import { assertPropertyAccess, getRestrictedScope, ORG_WIDE_PROPERTY_ROLES } from './resourceAccess.service.js';
 import { audit } from './audit.service.js';
+import { notify } from './notification.service.js';
 
 const IMMUTABLE_STATUSES = new Set(['terminated', 'expired', 'renewed']);
 
@@ -140,7 +143,33 @@ export async function activateLease(id, organizationId, actingUser, req) {
   }
 
   await audit({ organizationId, userId: actingUser.id, action: 'lease.activated', entityType: 'lease', entityId: id, newValues: { status: 'active' }, req });
+  await notifyLeaseActivated(organizationId, lease);
   return getLease(id, organizationId, actingUser);
+}
+
+// Notifies everyone with a real stake in the unit going active: the
+// tenant, the property's owner (if any), and every agent assigned to the
+// property. Each notify() call is independently fail-safe, so one bad
+// email/insert never blocks the others.
+async function notifyLeaseActivated(organizationId, lease) {
+  const property = lease.unit.building.property;
+  const message = `The lease for Unit ${lease.unit.unitNumber} at ${property.name} is now active.`;
+
+  if (lease.tenant?.userId) {
+    await notify({ organizationId, userId: lease.tenant.userId, type: 'lease_activated', title: 'Your lease is now active', message: `Your lease for Unit ${lease.unit.unitNumber} at ${property.name} is now active.` });
+  }
+
+  if (property.ownerId) {
+    const owner = await findOwnerById(property.ownerId, organizationId);
+    if (owner?.userId) {
+      await notify({ organizationId, userId: owner.userId, type: 'lease_activated', title: 'Lease activated', message });
+    }
+  }
+
+  const assignments = await findAssignmentsForProperty(property.id, organizationId);
+  for (const assignment of assignments) {
+    await notify({ organizationId, userId: assignment.userId, type: 'lease_activated', title: 'Lease activated', message });
+  }
 }
 
 export async function terminateLease(id, organizationId, body, actingUser, req) {

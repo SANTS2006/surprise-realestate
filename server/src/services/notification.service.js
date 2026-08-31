@@ -3,7 +3,11 @@ import { buildPaginationMeta } from '../utils/pagination.js';
 import {
   createNotification, findNotificationsForUser, countNotificationsForUser,
   countUnreadForUser, markNotificationRead, markAllNotificationsRead,
+  findAllNotificationsForOrganization, countAllNotificationsForOrganization, countAllUnreadForOrganization,
 } from '../repositories/notification.repository.js';
+import { findUserById } from '../repositories/user.repository.js';
+import { sendMail } from '../integrations/email/mailer.js';
+import { notificationEmail } from '../integrations/email/templates.js';
 import { logger } from '../config/logger.js';
 
 function serializeNotification(notification) {
@@ -14,29 +18,62 @@ function serializeNotification(notification) {
     message: notification.message,
     readAt: notification.readAt,
     createdAt: notification.createdAt,
+    // Only present on the admin org-wide feed (see listNotifications) —
+    // findNotificationsForUser (the self-scoped path) never includes it.
+    ...(notification.user ? { recipient: { id: notification.user.id, firstName: notification.user.firstName, lastName: notification.user.lastName, email: notification.user.email } } : {}),
   };
 }
 
 // Called from other services at the point an event actually happens (see
-// maintenance/work-order/payment services for the current hooks) — never
-// from a controller. Failure here must never fail the operation that
-// triggered it (a maintenance assignment succeeding shouldn't roll back
-// because a notification row failed to insert), so errors are logged and
-// swallowed, mirroring audit.service.js's own failure posture.
-export async function notify({ organizationId, userId, type, title, message }) {
+// maintenance/work-order/payment/lease/invoice/auditRemark services for the
+// current hooks) — never from a controller. Failure here must never fail
+// the operation that triggered it (a maintenance assignment succeeding
+// shouldn't roll back because a notification row failed to insert), so
+// errors are logged and swallowed, mirroring audit.service.js's own
+// failure posture. Every notify() also emails the recipient by default —
+// pass `sendEmail: false` when the calling service already sends its own
+// richer, event-specific template (e.g. inspectionScheduledEmail) so the
+// recipient isn't emailed twice for the one event.
+export async function notify({ organizationId, userId, type, title, message, sendEmail = true }) {
   if (!userId) return; // e.g. a tenant with no linked user account yet
   try {
     await createNotification({ organizationId, userId, type, title, message });
   } catch (err) {
     logger.error({ err, userId, type }, 'failed to create notification');
   }
+
+  if (!sendEmail) return;
+  try {
+    const user = await findUserById(userId, organizationId);
+    if (!user?.email) return;
+    const { subject, html, text } = notificationEmail({ title, message });
+    await sendMail({ to: user.email, subject, html, text });
+  } catch (err) {
+    logger.error({ err, userId, type }, 'failed to email notification');
+  }
 }
 
-export async function listNotifications(userId, organizationId, { page, pageSize, skip, take, unreadOnly }) {
+export async function listNotifications(actingUser, organizationId, { page, pageSize, skip, take, unreadOnly, all }) {
+  // `all` only ever takes effect for an administrator — anyone else asking
+  // for it silently gets their own notifications instead, same posture as
+  // every other UX-only query flag in this codebase (the real boundary is
+  // never trusting the caller's own claim about their role).
+  if (all && actingUser.roles.includes('administrator')) {
+    const [notifications, total, unreadCount] = await Promise.all([
+      findAllNotificationsForOrganization(organizationId, { skip, take, unreadOnly }),
+      countAllNotificationsForOrganization(organizationId, { unreadOnly }),
+      countAllUnreadForOrganization(organizationId),
+    ]);
+    return {
+      notifications: notifications.map(serializeNotification),
+      meta: { ...buildPaginationMeta({ page, pageSize, total }), unreadCount },
+    };
+  }
+
   const [notifications, total, unreadCount] = await Promise.all([
-    findNotificationsForUser(userId, organizationId, { skip, take, unreadOnly }),
-    countNotificationsForUser(userId, organizationId, { unreadOnly }),
-    countUnreadForUser(userId, organizationId),
+    findNotificationsForUser(actingUser.id, organizationId, { skip, take, unreadOnly }),
+    countNotificationsForUser(actingUser.id, organizationId, { unreadOnly }),
+    countUnreadForUser(actingUser.id, organizationId),
   ]);
   return {
     notifications: notifications.map(serializeNotification),

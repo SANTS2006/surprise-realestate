@@ -162,6 +162,27 @@ export function inspectionScheduledEmail({ propertyName, unitLabel, inspectionTy
   };
 }
 
+// Generic fallback used by notification.service.js#notify to email any
+// in-app notification that doesn't already have its own richer template
+// (e.g. inspection scheduling — see inspection.service.js, which sends its
+// own inspectionScheduledEmail and opts out of this one via
+// notify({ sendEmail: false })). Deliberately plain: it has no token/URL of
+// its own, only whatever title/message the calling service already wrote
+// for the in-app notification.
+export function notificationEmail({ title, message }) {
+  return {
+    subject: title,
+    text: message,
+    html: renderEmail({
+      headerLabel: 'Notification',
+      eyebrow: 'Update',
+      heading: title,
+      paragraphs: [message],
+      cta: { icon: '🔔', heading: 'View in your account', description: 'Open Surprise Real Estate to see the full details.', href: `${env.CLIENT_URL}/notifications`, buttonText: 'View Notifications' },
+    }),
+  };
+}
+
 export function passwordResetEmail(token) {
   const url = `${env.CLIENT_URL}/reset-password?token=${token}`;
   const now = new Date();

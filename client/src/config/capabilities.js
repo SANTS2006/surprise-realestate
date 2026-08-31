@@ -79,6 +79,12 @@ export const CAN_VIEW_AUDIT_LOGS = ['administrator', 'auditor'];
 // otherwise read-only role (auditor); administrator has it too via ALL.
 export const CAN_CREATE_AUDIT_REMARKS = ['administrator', 'auditor'];
 
+// The org-wide "every notification, for every user" feed — UI-only gate,
+// the server independently re-checks `roles.includes('administrator')'
+// itself (see notification.service.js#listNotifications) before ever
+// honoring the `all=true` query flag.
+export const CAN_VIEW_ALL_NOTIFICATIONS = ['administrator'];
+
 export function canAny(roles, allowedRoles) {
   return roles.some((r) => allowedRoles.includes(r));
 }

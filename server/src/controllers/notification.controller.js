@@ -5,7 +5,7 @@ import * as notificationService from '../services/notification.service.js';
 
 export const list = asyncHandler(async (req, res) => {
   const { page, pageSize, skip, take } = parsePagination(req.query);
-  const result = await notificationService.listNotifications(req.user.id, req.user.organizationId, { page, pageSize, skip, take, unreadOnly: req.query.unreadOnly });
+  const result = await notificationService.listNotifications(req.user, req.user.organizationId, { page, pageSize, skip, take, unreadOnly: req.query.unreadOnly, all: req.query.all });
   sendSuccess(res, { data: result.notifications, meta: result.meta });
 });
 

@@ -16,6 +16,16 @@ export function findUserById(id, organizationId) {
 // accounts in different organizations later (e.g. an owner invited into two
 // portfolios), but for now registration additionally enforces global email
 // uniqueness (see auth.service.js) so login-by-email-alone stays unambiguous.
+// Used to fan out an org-wide notification (e.g. a new audit remark) to
+// every user holding a given role, without the caller needing to know
+// anything about the role/permission tables itself.
+export function findUserIdsByRole(organizationId, roleName) {
+  return prisma.user.findMany({
+    where: { organizationId, userRoles: { some: { role: { name: roleName } } } },
+    select: { id: true },
+  });
+}
+
 export function findUserByEmailGlobal(email) {
   return prisma.user.findFirst({ where: { email: email.toLowerCase() } });
 }

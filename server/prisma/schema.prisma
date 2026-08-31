@@ -178,6 +178,11 @@ enum NotificationType {
   document_uploaded
   user_invited
   system
+  inspection_scheduled
+  lease_activated
+  invoice_sent
+  audit_remark_created
+  tenant_message
 }
 
 // ─────────────────────────────────────────────────────────────────────────

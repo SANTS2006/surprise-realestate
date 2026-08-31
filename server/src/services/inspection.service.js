@@ -111,9 +111,13 @@ export async function scheduleInspection(organizationId, body, actingUser, req) 
         await sendMail({ to: tenant.email, subject, html, text });
       }
       if (tenant?.userId) {
+        // sendEmail: false — the richer inspectionScheduledEmail above
+        // already covers this event; notify()'s default generic email
+        // would otherwise double-email the tenant.
         await notify({
           organizationId, userId: tenant.userId, type: 'inspection_scheduled',
           title: 'Inspection scheduled', message: `A ${inspection.type.replace('_', ' ')} inspection is scheduled for Unit ${unit.unitNumber} on ${new Date(inspection.inspectionDate).toLocaleDateString()}.`,
+          sendEmail: false,
         });
       }
     } catch (err) {
