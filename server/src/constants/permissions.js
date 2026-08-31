@@ -99,6 +99,12 @@ export const DEFAULT_ROLE_TEMPLATES = {
   },
   auditor: {
     description: 'Organization-wide read-only access.',
-    permissions: readOnly(RESOURCES),
+    // `documents:download` is a SPECIAL_PERMISSION, not covered by
+    // readOnly(RESOURCES) — without it, GET /documents/:id/access-url 403s
+    // (it's gated by `documents:download`, not `documents:read`), so an
+    // auditor could see a document's metadata in a list but never actually
+    // view/download it — including every avatar and property photo in the
+    // app, since those render via a signed access-url fetch too.
+    permissions: [...readOnly(RESOURCES), 'documents:download'],
   },
 };
