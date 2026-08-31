@@ -10,8 +10,7 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 const ACCEPT = '.jpg,.jpeg,.png,.webp';
 
 export function ProfilePictureCard() {
-  const { user } = useAuth();
-  const [refreshKey, setRefreshKey] = useState(0);
+  const { user, avatarVersion, bumpAvatarVersion } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
@@ -24,7 +23,7 @@ export function ProfilePictureCard() {
     setUploading(true);
     try {
       await documentsApi.uploadAvatar(file);
-      setRefreshKey((k) => k + 1);
+      bumpAvatarVersion();
     } catch (err) {
       setError(err.details?.map((d) => d.message).join(' ') || err.message);
     } finally {
@@ -41,7 +40,7 @@ export function ProfilePictureCard() {
         {error && <Alert variant="error" className="mb-4">{error}</Alert>}
         <div className="flex items-center gap-4">
           <div className="relative">
-            <UserAvatar user={user} size={72} refreshKey={refreshKey} />
+            <UserAvatar user={user} size={72} refreshKey={avatarVersion} />
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}

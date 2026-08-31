@@ -19,7 +19,7 @@ function useOutsideClick(ref, onOutside) {
 }
 
 export function Topbar({ onMenuClick }) {
-  const { user, logout } = useAuth();
+  const { user, logout, avatarVersion } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -85,7 +85,7 @@ export function Topbar({ onMenuClick }) {
             aria-haspopup="menu"
             className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800"
           >
-            <UserAvatar user={user} size={28} className="text-xs" />
+            <UserAvatar user={user} size={28} className="text-xs" refreshKey={avatarVersion} />
             <span className="hidden text-sm font-medium text-slate-700 dark:text-slate-200 sm:inline">
               {user?.firstName} {user?.lastName}
             </span>

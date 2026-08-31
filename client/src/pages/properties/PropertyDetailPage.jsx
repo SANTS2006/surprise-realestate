@@ -144,7 +144,7 @@ export default function PropertyDetailPage() {
           <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Photos &amp; videos</h2>
         </CardHeader>
         <CardBody>
-          <MediaGallery entityType="property" entityId={id} canUpload={canUploadMedia} canDelete={canDeleteMedia} />
+          <MediaGallery entityType="property" entityId={id} canUpload={canUploadMedia} canDelete={canDeleteMedia} onChange={loadProperty} />
         </CardBody>
       </Card>
 
@@ -204,7 +204,15 @@ export default function PropertyDetailPage() {
         onUnitsChanged={() => { loadBuildings(); loadProperty(); }}
       />
       <Modal open={Boolean(mediaBuilding)} onClose={() => setMediaBuilding(null)} title={mediaBuilding ? `${mediaBuilding.name} — Photos & videos` : ''} size="lg">
-        {mediaBuilding && <MediaGallery entityType="building" entityId={mediaBuilding.id} canUpload={canUploadMedia} canDelete={canDeleteMedia} />}
+        {mediaBuilding && (
+          <MediaGallery
+            entityType="building"
+            entityId={mediaBuilding.id}
+            canUpload={canUploadMedia}
+            canDelete={canDeleteMedia}
+            onChange={() => { loadBuildings(); loadProperty(); }}
+          />
+        )}
       </Modal>
       <ConfirmDialog
         open={archiveOpen}

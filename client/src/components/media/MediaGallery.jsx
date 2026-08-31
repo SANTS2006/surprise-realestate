@@ -157,7 +157,12 @@ function MediaThumbnail({ doc, canDelete, onDeleted, onOpen }) {
 // every thumbnail fetches its own short-lived signed URL rather than using
 // a public asset URL. The first item is shown as a large hero with the rest
 // as a thumbnail strip; clicking any of them opens a full-screen lightbox.
-export function MediaGallery({ entityType, entityId, canUpload, canDelete }) {
+// `onChange` (optional) fires after any upload or delete — the gallery
+// always keeps its own document list in sync on its own, but a parent
+// page/card showing a separate server-computed `coverImageUrl` snapshot
+// (e.g. PropertyCard, BuildingCard, UnitCard) needs this signal to know its
+// own stale copy should be refetched too.
+export function MediaGallery({ entityType, entityId, canUpload, canDelete, onChange }) {
   const [documents, setDocuments] = useState(null);
   const [error, setError] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -182,6 +187,7 @@ export function MediaGallery({ entityType, entityId, canUpload, canDelete }) {
     try {
       await documentsApi.upload(entityType, entityId, file);
       load();
+      onChange?.();
     } catch (err) {
       setUploadError(err.details?.map((d) => d.message).join(' ') || err.message);
     } finally {
@@ -192,6 +198,7 @@ export function MediaGallery({ entityType, entityId, canUpload, canDelete }) {
   const removeDoc = (id) => {
     setDocuments((prev) => prev.filter((d) => d.id !== id));
     setLightboxIndex(null);
+    onChange?.();
   };
 
   const navigate = (delta) => {

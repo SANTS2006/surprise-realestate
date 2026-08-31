@@ -98,7 +98,15 @@ export function BuildingUnitsModal({ open, onClose, building, onUnitsChanged }) 
       />
 
       <Modal open={Boolean(mediaUnit)} onClose={() => setMediaUnit(null)} title={mediaUnit ? `Unit ${mediaUnit.unitNumber} — Photos & videos` : ''} size="lg">
-        {mediaUnit && <MediaGallery entityType="unit" entityId={mediaUnit.id} canUpload={canUploadMedia} canDelete={canDeleteMedia} />}
+        {mediaUnit && (
+          <MediaGallery
+            entityType="unit"
+            entityId={mediaUnit.id}
+            canUpload={canUploadMedia}
+            canDelete={canDeleteMedia}
+            onChange={() => { loadUnits(); onUnitsChanged(); }}
+          />
+        )}
       </Modal>
     </>
   );

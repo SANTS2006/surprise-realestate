@@ -18,10 +18,8 @@ import {
   setEmailVerified, recordFailedLogin, resetFailedLogins, setMfaSecret,
   enableMfa, disableMfa, activateIfPending,
 } from '../repositories/user.repository.js';
-import { createOrganization } from '../repositories/organization.repository.js';
-import { createExpenseCategories } from '../repositories/expenseCategory.repository.js';
-import { bootstrapDefaultRoles } from '../services/role.service.js';
-import { assignRoleToUser, findRolesForUser } from '../repositories/role.repository.js';
+import { assignRoleToUser, findRolesForUser, findRoleByName } from '../repositories/role.repository.js';
+import { findOrganizationById } from '../repositories/organization.repository.js';
 import {
   createEmailVerificationToken, findValidEmailVerificationToken,
   markEmailVerificationTokenUsed, invalidateOutstandingVerificationTokens,
@@ -41,10 +39,7 @@ import { destroyAllSessionsForUser } from '../config/session.js';
 import { audit } from './audit.service.js';
 import { logger } from '../config/logger.js';
 import { serializeUser } from '../utils/serializers.js';
-
-// Seeded per organization on registration (§32 of the requirements) — an
-// editable starting point via POST /expenses/categories, not a fixed list.
-const DEFAULT_EXPENSE_CATEGORIES = ['Maintenance', 'Utilities', 'Insurance', 'Taxes', 'Vendor Payments', 'Administrative'];
+import { env } from '../config/env.js';
 
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_TTL_MS = 15 * 60 * 1000;
@@ -78,54 +73,66 @@ export async function getCurrentUser(userId, organizationId) {
 
 // ── Registration ────────────────────────────────────────────────────────
 
-export async function registerOrganization({ organizationName, firstName, lastName, email, password }, req) {
+// Single-tenant deployment: this is one real estate company's system, not a
+// multi-org SaaS product, so registering an account never creates a new
+// organization — every new user joins the one organization configured via
+// PRIMARY_ORGANIZATION_ID, starting out with the least-privileged `tenant`
+// role. An administrator promotes them to a different role afterward from
+// the Users module — see role.service.js#setRolePermissionsRecord and the
+// role-assignment endpoints for how that works.
+export async function registerOrganization({ firstName, lastName, email, password }, req) {
   const existing = await findUserByEmailGlobal(email);
   if (existing) {
     // Same generic shape as any other validation error — does not confirm
-    // whether the email is registered under a *different* organization,
-    // beyond what's unavoidable for this specific "you typed your own
-    // email while registering a new org" case.
+    // whether the email is already registered, beyond what's unavoidable
+    // for this specific "you typed your own email while registering" case.
     throw AppError.conflict('An account with this email already exists.');
+  }
+
+  const organization = await findOrganizationById(env.PRIMARY_ORGANIZATION_ID);
+  if (!organization) {
+    // Misconfiguration, not a user-facing error — the deployment's
+    // PRIMARY_ORGANIZATION_ID env var doesn't point at a real row.
+    logger.error({ orgId: env.PRIMARY_ORGANIZATION_ID }, 'PRIMARY_ORGANIZATION_ID does not match any organization');
+    throw AppError.internal('Registration is temporarily unavailable. Please try again later.');
+  }
+
+  const tenantRole = await findRoleByName(organization.id, 'tenant');
+  if (!tenantRole) {
+    logger.error({ orgId: organization.id }, 'Primary organization has no "tenant" role to assign at registration');
+    throw AppError.internal('Registration is temporarily unavailable. Please try again later.');
   }
 
   assertPasswordPolicy(password, { email, firstName, lastName });
   const passwordHash = await hashPassword(password);
 
-  // The register form no longer asks for an organization name — every
-  // organization still needs one (it's shown in Settings and invite
-  // emails), so derive a reasonable default from the registering user.
-  const resolvedOrgName = organizationName?.trim() || `${firstName}'s Organization`;
-
   const result = await prisma.$transaction(async (tx) => {
-    const organization = await createOrganization({ name: resolvedOrgName, email: email.toLowerCase() }, tx);
-    const roleIds = await bootstrapDefaultRoles(organization.id, tx);
-    await createExpenseCategories(organization.id, DEFAULT_EXPENSE_CATEGORIES, tx);
     const user = await createUser(
       { organizationId: organization.id, firstName, lastName, email, passwordHash, status: 'pending' },
       tx
     );
-    await assignRoleToUser(user.id, roleIds.administrator, tx);
+    await assignRoleToUser(user.id, tenantRole.id, tx);
 
     const rawToken = generateRawToken();
     await createEmailVerificationToken(user.id, rawToken, new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS), tx);
 
-    return { organization, user, rawToken };
+    return { user, rawToken };
   }, { timeout: 15_000 });
 
   await audit({
-    organizationId: result.organization.id,
+    organizationId: organization.id,
     userId: result.user.id,
-    action: 'organization.register',
-    entityType: 'organization',
-    entityId: result.organization.id,
-    newValues: { name: result.organization.name },
+    action: 'user.registered',
+    entityType: 'user',
+    entityId: result.user.id,
+    newValues: { email: result.user.email, role: 'tenant' },
     req,
   });
 
   const { subject, html, text } = verificationEmail(result.rawToken);
   await sendMail({ to: result.user.email, subject, html, text });
 
-  return { organization: result.organization, user: serializeUser(result.user) };
+  return { organization, user: serializeUser(result.user) };
 }
 
 export async function verifyEmail(rawToken, req) {

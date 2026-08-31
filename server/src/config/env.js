@@ -13,6 +13,12 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL (Neon pooled connection) is required'),
   DIRECT_URL: z.string().min(1, 'DIRECT_URL (Neon direct connection) is required'),
 
+  // This is a single-tenant deployment (one real estate company, not a
+  // multi-org SaaS) — every new registration joins this one organization
+  // as a `tenant` rather than creating its own org. See
+  // auth.service.js#registerOrganization.
+  PRIMARY_ORGANIZATION_ID: z.string().uuid('PRIMARY_ORGANIZATION_ID must be the UUID of the one organization new registrations join'),
+
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
   SESSION_IDLE_TIMEOUT_MINUTES: z.coerce.number().int().positive().default(30),
   SESSION_ABSOLUTE_TIMEOUT_HOURS: z.coerce.number().int().positive().default(12),

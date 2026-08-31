@@ -11,6 +11,14 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Bumped whenever the signed-in user's own avatar changes (see
+  // ProfilePictureCard). UserAvatar re-fetches its image whenever the
+  // `refreshKey` it's given changes — every instance showing *your own*
+  // avatar (Topbar, Settings) is passed this shared counter so uploading a
+  // new photo in one place updates all of them, not just the one that
+  // triggered the upload.
+  const [avatarVersion, setAvatarVersion] = useState(0);
+  const bumpAvatarVersion = useCallback(() => setAvatarVersion((v) => v + 1), []);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -52,8 +60,11 @@ export function AuthProvider({ children }) {
   const hasRole = useCallback((...roles) => Boolean(user) && roles.some((r) => user.roles.includes(r)), [user]);
 
   const value = useMemo(
-    () => ({ user, loading, isAuthenticated: Boolean(user), login, completeMfaChallenge, logout, refreshUser, hasRole }),
-    [user, loading, login, completeMfaChallenge, logout, refreshUser, hasRole]
+    () => ({
+      user, loading, isAuthenticated: Boolean(user), login, completeMfaChallenge, logout, refreshUser, hasRole,
+      avatarVersion, bumpAvatarVersion,
+    }),
+    [user, loading, login, completeMfaChallenge, logout, refreshUser, hasRole, avatarVersion, bumpAvatarVersion]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

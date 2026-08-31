@@ -13,10 +13,9 @@ const password = z.string().min(12).max(128);
 
 export const registerSchema = z.object({
   body: z.object({
-    // No longer collected from the register form — registerOrganization()
-    // auto-generates a name when this is absent. Still accepted (optional)
-    // rather than rejected, so nothing breaks if a caller does send one.
-    organizationName: z.string().trim().min(2).max(200).optional(),
+    // Single-tenant deployment — registration always joins the one
+    // configured organization (see auth.service.js#registerOrganization),
+    // so there is no organization field to collect here at all.
     firstName: z.string().trim().min(1).max(100),
     lastName: z.string().trim().min(1).max(100),
     email,
