@@ -24,6 +24,15 @@ import { findPropertiesByOrganization } from '../repositories/property.repositor
 const ORG_WIDE_PROPERTY_ROLES = new Set(['administrator', 'accountant', 'maintenance_manager', 'auditor']);
 const ASSIGNMENT_SCOPED_ROLES = new Set(['property_manager', 'agent']);
 
+// A "no Owner/Tenant record yet" scope must resolve to a filter that
+// guarantees zero rows — never omitting the filter (which would silently
+// mean "no restriction," i.e. org-wide access). The nil UUID is
+// syntactically valid for a `db.Uuid` column (so Postgres accepts it in an
+// equality filter without erroring, unlike a plain sentinel string such as
+// '__none__') and Prisma's `@default(uuid())` never generates it, so it can
+// never collide with a real row.
+export const NO_MATCH_ID = '00000000-0000-0000-0000-000000000000';
+
 function hasAnyRole(actingUser, roleSet) {
   return actingUser.roles.some((r) => roleSet.has(r));
 }
@@ -62,7 +71,7 @@ export async function assertOwnTenantRecord(tenantId, actingUser) {
 // expenses, maintenance requests, inspections, ...): resolves what a
 // restricted role's query should be narrowed to, so each service doesn't
 // re-derive the same role branching. Returns one of:
-//   { tenantId }     - self-scoped (tenant); '__none__' if they have no
+//   { tenantId }     - self-scoped (tenant); NO_MATCH_ID if they have no
 //                       Tenant record yet, which must resolve to zero rows,
 //                       never "no filter" (org-wide).
 //   { propertyIds }  - assignment- or ownership-scoped (property_manager,
@@ -74,7 +83,7 @@ export async function getRestrictedScope(actingUser, organizationId) {
 
   if (actingUser.roles.includes('tenant')) {
     const tenant = await findTenantByUserId(actingUser.id, organizationId);
-    return { tenantId: tenant?.id ?? '__none__' };
+    return { tenantId: tenant?.id ?? NO_MATCH_ID };
   }
 
   if (hasAnyRole(actingUser, ASSIGNMENT_SCOPED_ROLES)) {

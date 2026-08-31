@@ -13,7 +13,7 @@ import {
   findAssignmentsForProperty, findPropertyIdsAssignedToUser,
 } from '../repositories/propertyAssignment.repository.js';
 import { findUserById } from '../repositories/user.repository.js';
-import { assertPropertyAccess, ORG_WIDE_PROPERTY_ROLES, ASSIGNMENT_SCOPED_ROLES } from './resourceAccess.service.js';
+import { assertPropertyAccess, ORG_WIDE_PROPERTY_ROLES, ASSIGNMENT_SCOPED_ROLES, NO_MATCH_ID } from './resourceAccess.service.js';
 import { audit } from './audit.service.js';
 
 const EMPTY_UNIT_SUMMARY = { total: 0, available: 0, occupied: 0, reserved: 0, under_maintenance: 0, unavailable: 0 };
@@ -88,7 +88,7 @@ export async function listProperties(organizationId, actingUser, { page, pageSiz
     propertyIds = assignments.map((a) => a.propertyId);
   } else if (actingUser.roles.includes('owner') && !hasAnyRole(actingUser, ORG_WIDE_PROPERTY_ROLES)) {
     const owner = await findOwnerByUserId(actingUser.id, organizationId);
-    ownerId = owner?.id ?? '__none__'; // no Owner record yet => guaranteed-empty result, not org-wide
+    ownerId = owner?.id ?? NO_MATCH_ID; // no Owner record yet => guaranteed-empty result, not org-wide
   }
 
   const [properties, total] = await Promise.all([

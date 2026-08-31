@@ -8,7 +8,7 @@ import { sumApprovedExpenses, findApprovedExpensesSince } from '../repositories/
 import { countMaintenanceRequestsByOrganization } from '../repositories/maintenanceRequest.repository.js';
 import { countTenantsByOrganization, findTenantByUserId } from '../repositories/tenant.repository.js';
 import { countOwnersByOrganization } from '../repositories/owner.repository.js';
-import { getRestrictedScope } from './resourceAccess.service.js';
+import { getRestrictedScope, NO_MATCH_ID } from './resourceAccess.service.js';
 
 const OPEN_MAINTENANCE_STATUSES = ['open', 'in_review', 'assigned', 'scheduled', 'in_progress'];
 const TREND_MONTHS = 6;
@@ -131,7 +131,7 @@ async function getTenantDashboard(organizationId, tenantId) {
 export async function getDashboard(organizationId, actingUser) {
   if (actingUser.roles.includes('tenant')) {
     const tenant = await findTenantByUserId(actingUser.id, organizationId);
-    return getTenantDashboard(organizationId, tenant?.id ?? '__none__');
+    return getTenantDashboard(organizationId, tenant?.id ?? NO_MATCH_ID);
   }
 
   const scope = await getRestrictedScope(actingUser, organizationId);

@@ -10,7 +10,11 @@ export const helmetMiddleware = helmet({
     ? {
         directives: {
           defaultSrc: ["'self'"],
-          imgSrc: ["'self'", 'data:', 'res.cloudinary.com'],
+          // Signed "authenticated"-delivery URLs (see document.service.js's
+          // generateSignedAccessUrl) come from Cloudinary's *api* subdomain
+          // (`/v1_1/.../image/download?...`), not the `res.cloudinary.com`
+          // CDN used for public assets — both need to be allowed.
+          imgSrc: ["'self'", 'data:', 'res.cloudinary.com', 'api.cloudinary.com'],
           connectSrc: ["'self'"],
           scriptSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
