@@ -218,6 +218,7 @@ model Organization {
   documents           Document[]
   notifications       Notification[]
   auditLogs           AuditLog[]
+  auditRemarks        AuditRemark[]
   propertyAssignments PropertyAssignment[]
 
   @@map("organizations")
@@ -253,6 +254,7 @@ model User {
   tenant        Tenant?
   notifications Notification[]
   auditLogs     AuditLog[]
+  auditRemarks  AuditRemark[]
   documentsUploaded        Document[]               @relation("DocumentUploadedBy")
   refreshTokens            RefreshToken[]
   passwordResetTokens      PasswordResetToken[]
@@ -842,4 +844,23 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([timestamp])
   @@map("audit_logs")
+}
+
+// A free-text remark an auditor leaves after reviewing the system — distinct
+// from AuditLog (which is an automatic, per-action machine trail): this is a
+// deliberate, authored note ("reviewed Q3 financials, no exceptions found").
+// Immutable once created (no update/delete path), same permanence principle
+// as AuditLog itself.
+model AuditRemark {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  authorId       String   @map("author_id") @db.Uuid
+  content        String
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  author       User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("audit_remarks")
 }

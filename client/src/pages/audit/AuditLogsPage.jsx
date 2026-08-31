@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
-import { History, ChevronDown } from 'lucide-react';
+import { History, ChevronDown, MessageSquareText } from 'lucide-react';
 import clsx from 'clsx';
 import { Card, CardBody } from '../../components/ui/Card.jsx';
-import { Field } from '../../components/ui/Input.jsx';
+import { Field, TextareaField } from '../../components/ui/Input.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Alert } from '../../components/ui/Alert.jsx';
 import { LoadingState } from '../../components/ui/Spinner.jsx';
 import { Pagination } from '../../components/ui/Pagination.jsx';
 import { auditLogsApi } from '../../api/auditLogs.js';
+import { auditRemarksApi } from '../../api/auditRemarks.js';
+import { useAuth } from '../../contexts/AuthContext.jsx';
+import { CAN_CREATE_AUDIT_REMARKS, canAny } from '../../config/capabilities.js';
 
 const dateTimeFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'medium' });
 
@@ -61,7 +64,100 @@ function AuditLogRow({ entry }) {
   );
 }
 
-export default function AuditLogsPage() {
+const remarkDateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+
+function RemarksTab() {
+  const { user } = useAuth();
+  const canCreate = canAny(user?.roles ?? [], CAN_CREATE_AUDIT_REMARKS);
+
+  const [remarks, setRemarks] = useState(null);
+  const [meta, setMeta] = useState({ page: 1, pageSize: 20, total: 0, totalPages: 1 });
+  const [page, setPage] = useState(1);
+  const [content, setContent] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [formError, setFormError] = useState(null);
+
+  const load = useCallback(() => {
+    setError(null);
+    auditRemarksApi.list({ page, pageSize: 20 })
+      .then((res) => { setRemarks(res.data); setMeta(res.meta); })
+      .catch((err) => setError(err.message));
+  }, [page]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    if (!content.trim()) return;
+    setFormError(null);
+    setSubmitting(true);
+    try {
+      await auditRemarksApi.create(content.trim());
+      setContent('');
+      setPage(1);
+      load();
+    } catch (err) {
+      setFormError(err.details?.map((d) => d.message).join(' ') || err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      {canCreate && (
+        <Card>
+          <CardBody>
+            <form onSubmit={onSubmit} className="flex flex-col gap-3">
+              <TextareaField
+                label="Leave a remark"
+                hint="A note for the record — e.g. findings from a review, exceptions noted, or confirmation nothing was found."
+                placeholder="Reviewed Q3 financials and property records — no exceptions found."
+                rows={3}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                error={formError}
+              />
+              <div className="flex justify-end">
+                <Button type="submit" loading={submitting} disabled={!content.trim()}>Save remark</Button>
+              </div>
+            </form>
+          </CardBody>
+        </Card>
+      )}
+
+      {error && <Alert variant="error">{error}</Alert>}
+
+      <Card>
+        {remarks === null ? (
+          <LoadingState label="Loading remarks…" />
+        ) : remarks.length === 0 ? (
+          <CardBody className="flex flex-col items-center gap-2 py-16 text-center">
+            <MessageSquareText size={28} className="text-slate-300 dark:text-slate-700" aria-hidden="true" />
+            <p className="text-sm text-slate-500 dark:text-slate-400">No remarks yet.</p>
+          </CardBody>
+        ) : (
+          <>
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+              {remarks.map((r) => (
+                <li key={r.id} className="px-6 py-4">
+                  <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200">{r.content}</p>
+                  <p className="mt-2 text-xs text-slate-400">
+                    {r.author ? `${r.author.firstName} ${r.author.lastName}` : 'Unknown'} · {remarkDateFmt.format(new Date(r.createdAt))}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <Pagination page={meta.page} totalPages={meta.totalPages} total={meta.total} pageSize={meta.pageSize} onPageChange={setPage} />
+          </>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function AuditLogsTab() {
   const [entries, setEntries] = useState([]);
   const [meta, setMeta] = useState({ page: 1, pageSize: 20, total: 0, totalPages: 1 });
   const [page, setPage] = useState(1);
@@ -91,11 +187,6 @@ export default function AuditLogsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Audit logs</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">A record of who did what, organization-wide.</p>
-      </div>
-
       <Card>
         <CardBody>
           <form onSubmit={onFilterSubmit} className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
@@ -127,6 +218,46 @@ export default function AuditLogsPage() {
           </>
         )}
       </Card>
+    </div>
+  );
+}
+
+const TABS = [
+  { id: 'logs', label: 'Audit Logs', icon: History },
+  { id: 'remarks', label: 'Remarks', icon: MessageSquareText },
+];
+
+export default function AuditLogsPage() {
+  const [tab, setTab] = useState('logs');
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Audit</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">A record of who did what, organization-wide, plus reviewers' own notes.</p>
+      </div>
+
+      <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={clsx(
+              'flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
+              tab === t.id
+                ? 'border-brand-600 text-brand-600 dark:border-brand-400 dark:text-brand-400'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+            )}
+          >
+            <t.icon size={15} aria-hidden="true" />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'logs' && <AuditLogsTab />}
+      {tab === 'remarks' && <RemarksTab />}
     </div>
   );
 }

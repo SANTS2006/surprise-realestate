@@ -75,6 +75,10 @@ export const CAN_DELETE_DOCUMENTS = ['administrator'];
 // template mentions 'audit-logs' at all.
 export const CAN_VIEW_AUDIT_LOGS = ['administrator', 'auditor'];
 
+// audit-remarks:create — the one deliberate write permission on an
+// otherwise read-only role (auditor); administrator has it too via ALL.
+export const CAN_CREATE_AUDIT_REMARKS = ['administrator', 'auditor'];
+
 export function canAny(roles, allowedRoles) {
   return roles.some((r) => allowedRoles.includes(r));
 }

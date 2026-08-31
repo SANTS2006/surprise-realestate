@@ -11,7 +11,7 @@ const RESOURCES = [
   'organizations', 'users', 'roles', 'properties', 'buildings', 'units',
   'owners', 'tenants', 'leases', 'invoices', 'payments', 'expenses',
   'vendors', 'maintenance', 'work-orders', 'inspections', 'documents',
-  'notifications', 'reports', 'audit-logs', 'settings',
+  'notifications', 'reports', 'audit-logs', 'audit-remarks', 'settings',
 ];
 
 const STANDARD_ACTIONS = ['read', 'create', 'update', 'delete'];
@@ -105,6 +105,11 @@ export const DEFAULT_ROLE_TEMPLATES = {
     // auditor could see a document's metadata in a list but never actually
     // view/download it — including every avatar and property photo in the
     // app, since those render via a signed access-url fetch too.
-    permissions: [...readOnly(RESOURCES), 'documents:download'],
+    //
+    // `audit-remarks:create` is the one deliberate write exception to
+    // "read-only" — leaving a remark after a review is the auditor's actual
+    // job, not a system mutation (see audit-remark.service.js). Nothing else
+    // in this role writes anything.
+    permissions: [...readOnly(RESOURCES), 'documents:download', 'audit-remarks:create'],
   },
 };
