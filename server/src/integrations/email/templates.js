@@ -204,3 +204,55 @@ export function passwordResetEmail(token) {
     }),
   };
 }
+
+// renderEmail's callers above only ever pass our own copy or already-
+// trusted domain data (org names, dates, property labels) — the two
+// templates below are the first to interpolate raw text a member of the
+// public typed into a form on the listings site, so every such value is
+// escaped here first. Without this, a "message" containing e.g. `<img
+// src=x onerror=...>` would render as live HTML in the recipient's inbox.
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Sent to a listing's assigned agent(s) when a visitor submits the "Request
+// a viewing" form on the public site (see publicInquiry.service.js).
+export function listingInquiryEmail({ listingTitle, firstName, lastName, email, phone, message }) {
+  const name = `${escapeHtml(firstName)} ${escapeHtml(lastName)}`;
+  return {
+    subject: `New inquiry: ${listingTitle}`,
+    text: `${name} (${email}, ${phone}) is interested in ${listingTitle}:\n\n${message}`,
+    html: renderEmail({
+      headerLabel: 'New Inquiry',
+      eyebrow: 'Listing inquiry',
+      heading: listingTitle,
+      paragraphs: [`<strong>${name}</strong> is interested in this listing and left the following message:`, `<em>${escapeHtml(message)}</em>`],
+      detailsRows: [
+        { label: 'Email', value: escapeHtml(email) },
+        { label: 'Phone', value: escapeHtml(phone) },
+      ],
+      cta: { icon: '📩', heading: 'Reply to this lead', description: 'Reach out while the listing is still fresh on their mind.', href: `mailto:${encodeURIComponent(email)}`, buttonText: 'Reply by Email' },
+    }),
+  };
+}
+
+// Sent to the organization's general inbox from the public site's Contact
+// page (see publicInquiry.service.js) — not tied to any specific listing.
+export function generalContactEmail({ firstName, lastName, email, phone, message }) {
+  const name = `${escapeHtml(firstName)} ${escapeHtml(lastName)}`;
+  return {
+    subject: `New contact form message from ${name}`,
+    text: `${name} (${email}, ${phone}) sent:\n\n${message}`,
+    html: renderEmail({
+      headerLabel: 'Contact Form',
+      eyebrow: 'Website inquiry',
+      heading: 'New message from the website',
+      paragraphs: [`<strong>${name}</strong> sent the following message via the public website's Contact page:`, `<em>${escapeHtml(message)}</em>`],
+      detailsRows: [
+        { label: 'Email', value: escapeHtml(email) },
+        { label: 'Phone', value: escapeHtml(phone) },
+      ],
+      cta: { icon: '📩', heading: 'Reply to this message', description: 'Reach out to follow up.', href: `mailto:${encodeURIComponent(email)}`, buttonText: 'Reply by Email' },
+    }),
+  };
+}

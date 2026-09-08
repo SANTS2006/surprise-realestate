@@ -21,7 +21,18 @@ export function findAssignmentsForProperty(propertyId, organizationId) {
 export function findAgentAssignmentsForProperty(propertyId, organizationId) {
   return prisma.propertyAssignment.findMany({
     where: { propertyId, organizationId, user: { userRoles: { some: { role: { name: 'agent' } } } } },
-    include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
+    include: { user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
+  });
+}
+
+// Every agent in the organization, for the public site's team page — not
+// scoped to any one property (findAgentAssignmentsForProperty above is a
+// per-property lookup for a listing's "contact this agent" card).
+export function findAllAgents(organizationId) {
+  return prisma.user.findMany({
+    where: { organizationId, status: 'active', userRoles: { some: { role: { name: 'agent' } } } },
+    select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+    orderBy: { firstName: 'asc' },
   });
 }
 

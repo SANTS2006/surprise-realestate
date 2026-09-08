@@ -26,6 +26,7 @@ import { auditLogsRouter } from './auditLogs.routes.js';
 import { auditRemarksRouter } from './auditRemarks.routes.js';
 import { tenantMessagesRouter } from './tenantMessages.routes.js';
 import { referralsRouter } from './referrals.routes.js';
+import { publicRouter } from './public.routes.js';
 
 // /settings is covered by PATCH /organizations/me (Phase 5) — organization
 // settings live in Organization.settings (JSONB), so no separate resource
@@ -33,6 +34,13 @@ import { referralsRouter } from './referrals.routes.js';
 export const v1Router = Router();
 
 v1Router.use('/health', healthRouter);
+// Mounted early, deliberately — buildingsRouter/unitsRouter/generateInvoiceRouter
+// below are mounted at this router's own root ('/') and apply `authenticate`
+// unconditionally to every request that reaches them, regardless of path.
+// Registering `/public` after them would mean an unauthenticated public-site
+// request gets rejected by one of those routers' auth check before Express
+// ever tries matching it against `/public`'s own routes.
+v1Router.use('/public', publicRouter);
 v1Router.use('/auth', authRouter);
 v1Router.use('/users', usersRouter);
 v1Router.use('/organizations', organizationsRouter);
