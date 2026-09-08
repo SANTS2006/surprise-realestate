@@ -8,6 +8,8 @@ import {
 import { findLatestImageDocumentsByEntityIds, findDocumentsByEntity } from '../repositories/document.repository.js';
 import { findAgentAssignmentsForProperty, findAllAgents } from '../repositories/propertyAssignment.repository.js';
 import { generateSignedAccessUrl } from '../integrations/cloudinary/uploadService.js';
+import { countPropertiesByOrganization } from '../repositories/property.repository.js';
+import { countTenantsByOrganization } from '../repositories/tenant.repository.js';
 
 // Public images are served through the exact same signed-URL mechanism as
 // the authenticated app (see document.service.js) — nothing about Cloudinary
@@ -143,4 +145,24 @@ export async function getListingAgentAssignments(unitId, organizationId) {
 
 export function primaryOrganizationId() {
   return env.PRIMARY_ORGANIZATION_ID;
+}
+
+// Real, aggregate-only numbers for the homepage stats strip — deliberately
+// nothing per-record (no names, no addresses here), just counts. Replaces
+// what would otherwise be hardcoded marketing copy.
+export async function getPublicStats(organizationId) {
+  const [totalProperties, availableListings, cities, agents, totalTenants] = await Promise.all([
+    countPropertiesByOrganization(organizationId, { status: 'active' }),
+    countAvailableUnitsPublic(organizationId, {}),
+    findDistinctCitiesPublic(organizationId),
+    findAllAgents(organizationId),
+    countTenantsByOrganization(organizationId, { status: 'active' }),
+  ]);
+  return {
+    totalProperties,
+    availableListings,
+    neighborhoods: cities.length,
+    agents: agents.length,
+    tenants: totalTenants,
+  };
 }

@@ -19,6 +19,7 @@ publicRouter.get('/listings', validate(listPublicListingsSchema), publicControll
 publicRouter.get('/listings/filter-options', publicController.getFilterOptions);
 publicRouter.get('/listings/:id', validate(publicListingIdParamSchema), publicController.getListing);
 publicRouter.get('/agents', publicController.getAgents);
+publicRouter.get('/stats', publicController.getStats);
 
 // `authRateLimiter` isn't auth-specific in what it does (IP+email keyed
 // rate limiting) — reused here to stop the public site's forms being used

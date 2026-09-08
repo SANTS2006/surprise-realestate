@@ -34,6 +34,11 @@ export const getAgents = asyncHandler(async (req, res) => {
   sendSuccess(res, { data: agents });
 });
 
+export const getStats = asyncHandler(async (req, res) => {
+  const stats = await publicListingService.getPublicStats(ORG_ID);
+  sendSuccess(res, { data: stats });
+});
+
 export const createListingInquiry = asyncHandler(async (req, res) => {
   const result = await publicInquiryService.sendListingInquiry(ORG_ID, { listingId: req.params.id, ...req.body });
   sendSuccess(res, { statusCode: 201, data: result, message: 'Your message has been sent.' });
