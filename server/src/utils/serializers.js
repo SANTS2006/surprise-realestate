@@ -15,6 +15,7 @@ export function serializeUser(user, roles) {
     mfaEnabled: user.mfaEnabled,
     lastLoginAt: user.lastLoginAt ?? null,
     createdAt: user.createdAt,
+    referralCode: user.referralCode ?? null,
     ...(roles !== undefined ? { roles } : {}),
   };
 }

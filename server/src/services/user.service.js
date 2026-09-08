@@ -13,6 +13,7 @@ import { createPasswordResetToken } from '../repositories/passwordResetToken.rep
 import { sendMail } from '../integrations/email/mailer.js';
 import { inviteEmail } from '../integrations/email/templates.js';
 import { audit } from './audit.service.js';
+import { generateUniqueReferralCode } from '../utils/referralCode.js';
 
 const INVITE_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -53,9 +54,10 @@ export async function inviteUser({ organizationId, invitedBy, firstName, lastNam
 
   const unusablePassword = generateRawToken(32);
   const passwordHash = await hashPassword(unusablePassword);
+  const referralCode = await generateUniqueReferralCode(firstName);
 
   const { user, rawToken } = await prisma.$transaction(async (tx) => {
-    const created = await createUser({ organizationId, firstName, lastName, email, passwordHash, status: 'pending' }, tx);
+    const created = await createUser({ organizationId, firstName, lastName, email, passwordHash, status: 'pending', referralCode }, tx);
     await assignRoleToUser(created.id, role.id, tx);
     const token = generateRawToken();
     await createPasswordResetToken(created.id, token, new Date(Date.now() + INVITE_TOKEN_TTL_MS), tx);

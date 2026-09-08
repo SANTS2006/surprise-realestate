@@ -20,6 +20,9 @@ export const registerSchema = z.object({
     lastName: z.string().trim().min(1).max(100),
     email,
     password,
+    // Someone else's referralCode, optional — a typo or unknown code never
+    // blocks registration, see auth.service.js#registerOrganization.
+    referralCode: z.string().trim().max(20).optional(),
   }).strict(),
 });
 

@@ -183,6 +183,9 @@ enum NotificationType {
   invoice_sent
   audit_remark_created
   tenant_message
+  referral_used
+  referral_bonus_approved
+  referral_bonus_paid
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -226,6 +229,7 @@ model Organization {
   auditRemarks        AuditRemark[]
   propertyAssignments PropertyAssignment[]
   tenantMessages      TenantMessage[]
+  referrals           Referral[]
 
   @@map("organizations")
 }
@@ -253,6 +257,11 @@ model User {
   lastLoginAt          DateTime?  @map("last_login_at") @db.Timestamptz
   createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+  // Every user gets one at creation (registration or invite) — only a
+  // tenant realistically shares theirs, but generating it uniformly avoids
+  // conditional logic at each of the two user-creation call sites. See
+  // utils/referralCode.js.
+  referralCode         String?    @unique @map("referral_code")
 
   organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   userRoles     UserRole[]
@@ -268,6 +277,8 @@ model User {
   mfaRecoveryCodes         MfaRecoveryCode[]
   propertyAssignments      PropertyAssignment[]
   tenantMessagesReceived   TenantMessage[]
+  referralsMade            Referral[]               @relation("ReferralsMade")
+  referredBy               Referral?                @relation("ReferralsReceived")
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -896,4 +907,35 @@ model TenantMessage {
   @@index([tenantId])
   @@index([recipientId])
   @@map("tenant_messages")
+}
+
+enum ReferralStatus {
+  pending
+  approved
+  paid
+}
+
+// Created automatically when someone registers with another user's
+// referralCode (see auth.service.js#registerOrganization) — never created
+// directly through the API. bonusAmount and status start unset/pending;
+// an administrator/accountant reviews and pays out manually (see
+// referral.service.js), there is no automatic invoice credit.
+model Referral {
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  referrerId     String         @map("referrer_id") @db.Uuid
+  referredId     String         @unique @map("referred_id") @db.Uuid
+  code           String
+  bonusAmount    Decimal?       @map("bonus_amount") @db.Decimal(14, 2)
+  status         ReferralStatus @default(pending)
+  paidAt         DateTime?      @map("paid_at") @db.Timestamptz
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  referrer     User         @relation("ReferralsMade", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred     User         @relation("ReferralsReceived", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([referrerId])
+  @@map("referrals")
 }

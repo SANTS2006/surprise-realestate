@@ -26,6 +26,13 @@ export function findUserIdsByRole(organizationId, roleName) {
   });
 }
 
+// referralCode is globally unique (not per-organization) — same reasoning
+// as findUserByEmailGlobal below, just for the code a prospective tenant
+// types in at registration instead of an email address.
+export function findUserByReferralCode(code) {
+  return prisma.user.findUnique({ where: { referralCode: code } });
+}
+
 export function findUserByEmailGlobal(email) {
   return prisma.user.findFirst({ where: { email: email.toLowerCase() } });
 }

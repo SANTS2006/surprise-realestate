@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '../../layouts/AuthLayout.jsx';
 import { Field } from '../../components/ui/Input.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -11,8 +11,15 @@ import { registerSchema } from '../../validations/auth.js';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [serverError, setServerError] = useState(null);
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(registerSchema) });
+  // A tenant's own share link (e.g. /register?ref=ADA-7Q7JW) pre-fills the
+  // field — still editable, and still fine if left blank or wrong (see
+  // auth.service.js#registerOrganization, a bad code never blocks signup).
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { referralCode: searchParams.get('ref') ?? '' },
+  });
 
   const onSubmit = async (body) => {
     setServerError(null);
@@ -52,6 +59,14 @@ export default function RegisterPage() {
           hint="At least 12 characters, with uppercase, lowercase, and a number."
           error={errors.password?.message}
           {...register('password')}
+        />
+        <Field
+          label="Referral code (optional)"
+          placeholder="e.g. ADA-7Q7JW"
+          glass
+          hint="Were you referred by a current tenant? Enter their code here."
+          error={errors.referralCode?.message}
+          {...register('referralCode')}
         />
         <Button type="submit" loading={isSubmitting} className="w-full mt-2">
           Create account

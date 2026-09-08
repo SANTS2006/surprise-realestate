@@ -28,4 +28,5 @@ export const PAGE_TITLES = [
   { path: '/reports/financial', title: 'Financial Reports' },
   { path: '/notifications', title: 'Notifications' },
   { path: '/audit-logs', title: 'Audit' },
+  { path: '/referrals', title: 'Referrals' },
 ];

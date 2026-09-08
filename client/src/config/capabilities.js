@@ -91,6 +91,13 @@ export const CAN_VIEW_ALL_NOTIFICATIONS = ['administrator'];
 export const CAN_SEND_TENANT_MESSAGE = ['tenant'];
 export const CAN_VIEW_TENANT_MESSAGES = ['administrator', 'agent'];
 
+// referrals:approve/mark-paid — setting a bonus amount and paying it out
+// are deliberate financial actions, only administrator/accountant hold
+// them by default. Every role with referrals:read (including tenant, self-
+// scoped server-side) can view the /referrals page; this only gates the
+// approve/pay actions within it.
+export const CAN_MANAGE_REFERRALS = ['administrator', 'accountant'];
+
 export function canAny(roles, allowedRoles) {
   return roles.some((r) => allowedRoles.includes(r));
 }

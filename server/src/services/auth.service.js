@@ -37,6 +37,8 @@ import {
 } from '../repositories/mfaRecoveryCode.repository.js';
 import { destroyAllSessionsForUser } from '../config/session.js';
 import { audit } from './audit.service.js';
+import { recordReferralIfCodeValid } from './referral.service.js';
+import { generateUniqueReferralCode } from '../utils/referralCode.js';
 import { logger } from '../config/logger.js';
 import { serializeUser } from '../utils/serializers.js';
 import { env } from '../config/env.js';
@@ -80,7 +82,7 @@ export async function getCurrentUser(userId, organizationId) {
 // role. An administrator promotes them to a different role afterward from
 // the Users module — see role.service.js#setRolePermissionsRecord and the
 // role-assignment endpoints for how that works.
-export async function registerOrganization({ firstName, lastName, email, password }, req) {
+export async function registerOrganization({ firstName, lastName, email, password, referralCode }, req) {
   const existing = await findUserByEmailGlobal(email);
   if (existing) {
     // Same generic shape as any other validation error — does not confirm
@@ -105,10 +107,11 @@ export async function registerOrganization({ firstName, lastName, email, passwor
 
   assertPasswordPolicy(password, { email, firstName, lastName });
   const passwordHash = await hashPassword(password);
+  const newReferralCode = await generateUniqueReferralCode(firstName);
 
   const result = await prisma.$transaction(async (tx) => {
     const user = await createUser(
-      { organizationId: organization.id, firstName, lastName, email, passwordHash, status: 'pending' },
+      { organizationId: organization.id, firstName, lastName, email, passwordHash, status: 'pending', referralCode: newReferralCode },
       tx
     );
     await assignRoleToUser(user.id, tenantRole.id, tx);
@@ -131,6 +134,17 @@ export async function registerOrganization({ firstName, lastName, email, passwor
 
   const { subject, html, text } = verificationEmail(result.rawToken);
   await sendMail({ to: result.user.email, subject, html, text });
+
+  // A bonus-program side effect, never a registration gate — an invalid
+  // code, a typo, or any failure here must never be the reason someone
+  // can't create an account.
+  if (referralCode) {
+    try {
+      await recordReferralIfCodeValid({ organizationId: organization.id, code: referralCode, referredUserId: result.user.id });
+    } catch (err) {
+      logger.error({ err, userId: result.user.id }, 'failed to record referral');
+    }
+  }
 
   return { organization, user: serializeUser(result.user) };
 }

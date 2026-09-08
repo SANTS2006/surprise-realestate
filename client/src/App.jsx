@@ -41,6 +41,7 @@ const SettingsPage = lazy(() => import('./pages/settings/SettingsPage.jsx'));
 const ReportsPage = lazy(() => import('./pages/reports/ReportsPage.jsx'));
 const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage.jsx'));
 const AuditLogsPage = lazy(() => import('./pages/audit/AuditLogsPage.jsx'));
+const ReferralsPage = lazy(() => import('./pages/referrals/ReferralsPage.jsx'));
 
 export default function App() {
   return (
@@ -84,6 +85,7 @@ export default function App() {
             <Route path="/reports/financial" element={<Suspense fallback={<LoadingState />}><ReportsPage /></Suspense>} />
             <Route path="/notifications" element={<Suspense fallback={<LoadingState />}><NotificationsPage /></Suspense>} />
             <Route path="/audit-logs" element={<Suspense fallback={<LoadingState />}><AuditLogsPage /></Suspense>} />
+            <Route path="/referrals" element={<Suspense fallback={<LoadingState />}><ReferralsPage /></Suspense>} />
           </Route>
         </Route>
 

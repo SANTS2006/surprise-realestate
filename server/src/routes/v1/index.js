@@ -25,6 +25,7 @@ import { dashboardRouter } from './dashboard.routes.js';
 import { auditLogsRouter } from './auditLogs.routes.js';
 import { auditRemarksRouter } from './auditRemarks.routes.js';
 import { tenantMessagesRouter } from './tenantMessages.routes.js';
+import { referralsRouter } from './referrals.routes.js';
 
 // /settings is covered by PATCH /organizations/me (Phase 5) — organization
 // settings live in Organization.settings (JSONB), so no separate resource
@@ -63,3 +64,4 @@ v1Router.use('/dashboard', dashboardRouter);
 v1Router.use('/audit-logs', auditLogsRouter);
 v1Router.use('/audit-remarks', auditRemarksRouter);
 v1Router.use('/tenant-messages', tenantMessagesRouter);
+v1Router.use('/referrals', referralsRouter);

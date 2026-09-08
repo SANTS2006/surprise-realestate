@@ -12,6 +12,7 @@ export const registerSchema = z.object({
   lastName: z.string().trim().min(1, 'Last name is required.'),
   email,
   password,
+  referralCode: z.string().trim().max(20).optional(),
 });
 
 export const loginSchema = z.object({

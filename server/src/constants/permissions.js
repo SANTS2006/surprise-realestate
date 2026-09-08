@@ -12,6 +12,7 @@ const RESOURCES = [
   'owners', 'tenants', 'leases', 'invoices', 'payments', 'expenses',
   'vendors', 'maintenance', 'work-orders', 'inspections', 'documents',
   'notifications', 'reports', 'audit-logs', 'audit-remarks', 'settings',
+  'referrals',
 ];
 
 const STANDARD_ACTIONS = ['read', 'create', 'update', 'delete'];
@@ -30,6 +31,10 @@ const SPECIAL_PERMISSIONS = [
   // there's no reply yet). See tenantMessage.service.js.
   'tenant-messages:create',
   'tenant-messages:read',
+  // Setting a bonus amount / paying it out are deliberate financial actions,
+  // not implied by referrals:update — see referral.service.js.
+  'referrals:approve',
+  'referrals:mark-paid',
 ];
 
 export const PERMISSIONS = [
@@ -59,8 +64,9 @@ export const DEFAULT_ROLE_TEMPLATES = {
     description: 'Manages invoicing, payments, expenses, and financial reporting.',
     permissions: [
       ...readWrite(['invoices', 'payments', 'expenses', 'documents']),
-      ...readOnly(['properties', 'units', 'tenants', 'leases', 'owners', 'vendors']),
+      ...readOnly(['properties', 'units', 'tenants', 'leases', 'owners', 'vendors', 'referrals']),
       'payments:refund', 'invoices:void', 'expenses:approve', 'documents:download',
+      'referrals:approve', 'referrals:mark-paid',
       ...readWrite(['reports']),
     ],
   },
@@ -98,7 +104,7 @@ export const DEFAULT_ROLE_TEMPLATES = {
   tenant: {
     description: "Access to their own lease, invoices, payments, documents, and maintenance requests.",
     permissions: [
-      ...readOnly(['tenants', 'leases', 'invoices', 'payments', 'documents']),
+      ...readOnly(['tenants', 'leases', 'invoices', 'payments', 'documents', 'referrals']),
       'maintenance:read', 'maintenance:create', 'documents:download', 'tenant-messages:create',
     ],
   },
