@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, Wallet, RotateCcw, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, Wallet, RotateCcw, CheckCircle2, Clock, Receipt } from 'lucide-react';
 import { Card, CardBody } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { SelectField } from '../../components/ui/Input.jsx';
@@ -18,6 +18,7 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useStatusCounts } from '../../hooks/useStatusCounts.js';
 import { CAN_MANAGE_FINANCE, CAN_UPLOAD_DOCUMENTS, CAN_DELETE_DOCUMENTS, canAny } from '../../config/capabilities.js';
 import { formatCurrency } from '../../utils/currency.js';
+import { API_URL } from '../../config/env.js';
 
 const STATUS_TONE = { pending: 'warning', completed: 'success', failed: 'danger', refunded: 'neutral', reversed: 'neutral' };
 const STATUS_LIST = ['completed', 'pending', 'refunded'];
@@ -122,6 +123,17 @@ export default function PaymentsListPage() {
                     <Td><Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>{p.status}</Badge></Td>
                     <Td>
                       <div className="flex items-center justify-end gap-2">
+                        {['completed', 'refunded'].includes(p.status) && (
+                          <a
+                            href={`${API_URL}/payments/${p.id}/receipt`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                          >
+                            <Receipt size={14} aria-hidden="true" />
+                            Receipt
+                          </a>
+                        )}
                         <DocumentsButton
                           entityType="payment"
                           entityId={p.id}

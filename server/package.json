@@ -21,9 +21,9 @@
     "prisma:seed": "node ../database/seeds/index.js"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
     "@prisma/adapter-neon": "^5.22.0",
     "@prisma/client": "^5.22.0",
-    "@neondatabase/serverless": "^0.10.4",
     "argon2": "^0.41.1",
     "cloudinary": "^2.5.1",
     "connect-pg-simple": "^10.0.0",
@@ -39,6 +39,7 @@
     "multer": "^2.0.0",
     "nodemailer": "^9.0.6",
     "otplib": "^12.0.1",
+    "pdfkit": "^0.20.2",
     "pg": "^8.13.1",
     "pino": "^9.5.0",
     "pino-http": "^10.3.0",

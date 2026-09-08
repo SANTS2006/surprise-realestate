@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Wallet } from 'lucide-react';
+import { Wallet, Receipt } from 'lucide-react';
 import { Card, CardBody } from '../../components/ui/Card.jsx';
 import { Badge } from '../../components/ui/Badge.jsx';
 import { Alert } from '../../components/ui/Alert.jsx';
 import { LoadingState } from '../../components/ui/Spinner.jsx';
 import { paymentsApi } from '../../api/payments.js';
 import { formatCurrency } from '../../utils/currency.js';
+import { API_URL } from '../../config/env.js';
 
 const STATUS_TONE = { pending: 'warning', completed: 'success', failed: 'danger', refunded: 'neutral', reversed: 'neutral' };
 const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' });
@@ -51,6 +52,17 @@ export default function MyPaymentsPage() {
                       {p.reference && <> · Ref: {p.reference}</>}
                     </p>
                   </div>
+                  {['completed', 'refunded'].includes(p.status) && (
+                    <a
+                      href={`${API_URL}/payments/${p.id}/receipt`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      <Receipt size={14} aria-hidden="true" />
+                      Receipt
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>

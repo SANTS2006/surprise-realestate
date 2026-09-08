@@ -8,6 +8,7 @@ import {
 import { findTenantById } from '../repositories/tenant.repository.js';
 import { findInvoiceById, applyPaymentDelta } from '../repositories/invoice.repository.js';
 import { findLeaseById } from '../repositories/lease.repository.js';
+import { findOrganizationById } from '../repositories/organization.repository.js';
 import { assertPropertyAccess, getRestrictedScope } from './resourceAccess.service.js';
 import { audit } from './audit.service.js';
 import { notify } from './notification.service.js';
@@ -61,6 +62,18 @@ export async function listPayments(organizationId, actingUser, { page, pageSize,
 export async function getPayment(id, organizationId, actingUser) {
   const payment = await loadPaymentWithAccess(id, organizationId, actingUser);
   return serializePayment(payment);
+}
+
+// Raw (unserialized) payment + organization, for the PDF receipt renderer —
+// same access check as getPayment, but the receipt needs the full Decimal
+// amount and the org's real name, not the API's JSON-serialized shape.
+export async function getPaymentForReceipt(id, organizationId, actingUser) {
+  const payment = await loadPaymentWithAccess(id, organizationId, actingUser);
+  if (!['completed', 'refunded'].includes(payment.status)) {
+    throw AppError.conflict(`A receipt is only available for a completed or refunded payment (current status: ${payment.status}).`);
+  }
+  const organization = await findOrganizationById(organizationId);
+  return { payment, organization };
 }
 
 // Records a payment and, if it's tied to an invoice, applies it to that
