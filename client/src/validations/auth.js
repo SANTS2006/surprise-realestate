@@ -13,6 +13,9 @@ export const registerSchema = z.object({
   email,
   password,
   referralCode: z.string().trim().max(20).optional(),
+  agreedToTerms: z.literal(true, {
+    errorMap: () => ({ message: 'You must agree to the Terms & Conditions and Privacy Policy to continue.' }),
+  }),
 });
 
 export const loginSchema = z.object({

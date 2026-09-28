@@ -23,6 +23,13 @@ export const registerSchema = z.object({
     // Someone else's referralCode, optional — a typo or unknown code never
     // blocks registration, see auth.service.js#registerOrganization.
     referralCode: z.string().trim().max(20).optional(),
+    // Must literally be `true` — an absent field, `false`, or any other
+    // value fails validation, so registration is rejected outright (422) if
+    // the client didn't send an explicit agreement. Mirrors the checkbox in
+    // client/src/pages/auth/RegisterPage.jsx.
+    agreedToTerms: z.literal(true, {
+      errorMap: () => ({ message: 'You must agree to the Terms & Conditions and Privacy Policy to create an account.' }),
+    }),
   }).strict(),
 });
 

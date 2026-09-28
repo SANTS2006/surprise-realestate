@@ -262,6 +262,11 @@ model User {
   // conditional logic at each of the two user-creation call sites. See
   // utils/referralCode.js.
   referralCode         String?    @unique @map("referral_code")
+  // Set at registration when the user checks the Terms & Conditions /
+  // Privacy Policy agreement box (see auth.service.js#registerOrganization).
+  // Null for users created by invite rather than self-registration, since
+  // an admin-invited user never sees that checkbox.
+  termsAcceptedAt      DateTime?  @map("terms_accepted_at") @db.Timestamptz
 
   organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   userRoles     UserRole[]

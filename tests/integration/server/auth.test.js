@@ -25,7 +25,7 @@ describe('registration', () => {
     const agent = newAgent();
     const csrf = await primeCsrf(agent);
     const res = await authedPost(agent, csrf, '/api/v1/auth/register', {
-      organizationName: `Dup-${suffix}`, firstName: 'Dup', lastName: 'User', email, password,
+      firstName: 'Dup', lastName: 'User', email, password, agreedToTerms: true,
     });
     expect(res.status).toBe(409);
   });
@@ -34,8 +34,8 @@ describe('registration', () => {
     const agent = newAgent();
     const csrf = await primeCsrf(agent);
     const res = await authedPost(agent, csrf, '/api/v1/auth/register', {
-      organizationName: `Weak-${suffix}`, firstName: 'Weak', lastName: 'User',
-      email: `weak-${suffix}@rems-test.local`, password: 'short',
+      firstName: 'Weak', lastName: 'User',
+      email: `weak-${suffix}@rems-test.local`, password: 'short', agreedToTerms: true,
     });
     expect(res.status).toBe(422);
   });
@@ -47,7 +47,7 @@ describe('login', () => {
     const agent = newAgent();
     const csrf = await primeCsrf(agent);
     const registerRes = await authedPost(agent, csrf, '/api/v1/auth/register', {
-      organizationName: `Unverified-${suffix}`, firstName: 'Un', lastName: 'Verified', email: unverifiedEmail, password,
+      firstName: 'Un', lastName: 'Verified', email: unverifiedEmail, password, agreedToTerms: true,
     });
     extraOrgIds.push(registerRes.body.data.organization.id);
     const res = await authedPost(agent, csrf, '/api/v1/auth/login', { email: unverifiedEmail, password });

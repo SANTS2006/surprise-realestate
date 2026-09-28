@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/Button.jsx';
 import { Alert } from '../../components/ui/Alert.jsx';
 import { authApi } from '../../api/auth.js';
 import { registerSchema } from '../../validations/auth.js';
+import { PUBLIC_SITE_URL } from '../../config/env.js';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -68,6 +69,28 @@ export default function RegisterPage() {
           error={errors.referralCode?.message}
           {...register('referralCode')}
         />
+        <div>
+          <div className="flex items-start gap-2.5">
+            <input
+              type="checkbox"
+              id="agreedToTerms"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600"
+              {...register('agreedToTerms')}
+            />
+            <label htmlFor="agreedToTerms" className="cursor-pointer text-sm text-slate-600 dark:text-slate-300">
+              I agree to the{' '}
+              <a href={`${PUBLIC_SITE_URL}/terms`} target="_blank" rel="noreferrer" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
+                Terms &amp; Conditions
+              </a>{' '}
+              and{' '}
+              <a href={`${PUBLIC_SITE_URL}/privacy-policy`} target="_blank" rel="noreferrer" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
+                Privacy Policy
+              </a>
+              .
+            </label>
+          </div>
+          {errors.agreedToTerms && <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{errors.agreedToTerms.message}</p>}
+        </div>
         <Button type="submit" loading={isSubmitting} className="w-full mt-2">
           Create account
         </Button>

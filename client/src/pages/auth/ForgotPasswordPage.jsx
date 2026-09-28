@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
       footer={<Link to="/login" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">Back to sign in</Link>}
     >
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-        <Field label="Email address" type="email" placeholder="you@example.com" autoComplete="email" autoFocus glass error={errors.email?.message} {...register('email')} />
+        <Field label="Email address" type="email" placeholder="Enter your email" autoComplete="email" autoFocus glass error={errors.email?.message} {...register('email')} />
         <Button type="submit" loading={isSubmitting} className="w-full">
           Send reset link
         </Button>

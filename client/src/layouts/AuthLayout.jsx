@@ -1,7 +1,8 @@
-import { Building2, ShieldCheck, TrendingUp } from 'lucide-react';
+import { Building2, ShieldCheck, TrendingUp, MessageCircle } from 'lucide-react';
 import { Logo } from '../components/ui/Logo.jsx';
 import { ThemeToggle } from '../components/ui/ThemeToggle.jsx';
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js';
+import { PUBLIC_SITE_URL } from '../config/env.js';
 
 const HIGHLIGHTS = [
   { icon: Building2, text: 'Manage properties, leases & tenants in one place' },
@@ -62,7 +63,16 @@ export function AuthLayout({ title, description, children, footer }) {
           <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-brand-300 blur-3xl" />
         </div>
 
-        <header className="relative flex items-center justify-end px-6 py-5">
+        <header className="relative flex items-center justify-end gap-4 px-6 py-5">
+          <a
+            href={`${PUBLIC_SITE_URL}/contact`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+          >
+            <MessageCircle size={15} aria-hidden="true" />
+            Contact us
+          </a>
           <ThemeToggle />
         </header>
 

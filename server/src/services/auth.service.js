@@ -82,7 +82,14 @@ export async function getCurrentUser(userId, organizationId) {
 // role. An administrator promotes them to a different role afterward from
 // the Users module — see role.service.js#setRolePermissionsRecord and the
 // role-assignment endpoints for how that works.
-export async function registerOrganization({ firstName, lastName, email, password, referralCode }, req) {
+export async function registerOrganization({ firstName, lastName, email, password, referralCode, agreedToTerms }, req) {
+  // Defense in depth — the validator already rejects a missing/false value
+  // with a 422 before this ever runs, but a service function should never
+  // trust that every caller is that route.
+  if (!agreedToTerms) {
+    throw AppError.badRequest('You must agree to the Terms & Conditions and Privacy Policy to create an account.');
+  }
+
   const existing = await findUserByEmailGlobal(email);
   if (existing) {
     // Same generic shape as any other validation error — does not confirm
@@ -111,7 +118,10 @@ export async function registerOrganization({ firstName, lastName, email, passwor
 
   const result = await prisma.$transaction(async (tx) => {
     const user = await createUser(
-      { organizationId: organization.id, firstName, lastName, email, passwordHash, status: 'pending', referralCode: newReferralCode },
+      {
+        organizationId: organization.id, firstName, lastName, email, passwordHash,
+        status: 'pending', referralCode: newReferralCode, termsAcceptedAt: new Date(),
+      },
       tx
     );
     await assignRoleToUser(user.id, tenantRole.id, tx);

@@ -46,7 +46,7 @@ export async function registerVerifiedOrg({ orgName, firstName = 'Admin', lastNa
   const csrf = await primeCsrf(agent);
 
   const registerRes = await authedPost(agent, csrf, '/api/v1/auth/register', {
-    organizationName: orgName, firstName, lastName, email, password,
+    firstName, lastName, email, password, agreedToTerms: true,
   });
   if (registerRes.status !== 201) {
     throw new Error(`registerVerifiedOrg: registration failed (${registerRes.status}): ${JSON.stringify(registerRes.body)}`);

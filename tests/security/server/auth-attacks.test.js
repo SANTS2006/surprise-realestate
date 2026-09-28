@@ -80,7 +80,7 @@ describe('brute-force account lockout', () => {
     const agent = newAgent();
     const csrf = await primeCsrf(agent);
     const registerRes = await authedPost(agent, csrf, '/api/v1/auth/register', {
-      organizationName: `LockoutOrg-${suffix}`, firstName: 'Lock', lastName: 'Out', email, password,
+      firstName: 'Lock', lastName: 'Out', email, password, agreedToTerms: true,
     });
     extraOrgIds.push(registerRes.body.data.organization.id);
 
