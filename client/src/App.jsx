@@ -1,16 +1,20 @@
 import { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
+import { BrandingProvider } from './contexts/BrandingContext.jsx';
+import { PlatformAdminProvider } from './contexts/PlatformAdminContext.jsx';
 import { ProtectedRoute } from './components/auth/ProtectedRoute.jsx';
+import { PlatformAdminProtectedRoute } from './components/auth/PlatformAdminProtectedRoute.jsx';
 import { DashboardLayout } from './layouts/DashboardLayout.jsx';
 import { LoadingState } from './components/ui/Spinner.jsx';
-import StatusPage from './pages/StatusPage.jsx';
+import LandingPage from './pages/LandingPage.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
 import CheckEmailPage from './pages/auth/CheckEmailPage.jsx';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage.jsx';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
+import PlatformAdminLoginPage from './pages/platformAdmin/PlatformAdminLoginPage.jsx';
 
 // Every authenticated page is lazy-loaded — the auth screens above stay
 // eager since they're on the critical path for every first visit, but
@@ -42,55 +46,80 @@ const ReportsPage = lazy(() => import('./pages/reports/ReportsPage.jsx'));
 const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage.jsx'));
 const AuditLogsPage = lazy(() => import('./pages/audit/AuditLogsPage.jsx'));
 const ReferralsPage = lazy(() => import('./pages/referrals/ReferralsPage.jsx'));
+const PlatformAdminDashboardPage = lazy(() => import('./pages/platformAdmin/PlatformAdminDashboardPage.jsx'));
 
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace/>} />
+      <BrandingProvider>
+        <PlatformAdminProvider>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
 
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/check-email" element={<CheckEmailPage />} />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/set-password" element={<ResetPasswordPage />} />
+            {/* Every tenant's own branded auth flow, namespaced by their
+                URL name (see contexts/BrandingContext.jsx and
+                layouts/AuthLayout.jsx, which fetches and applies this
+                organization's branding for everything nested here). */}
+            <Route path="/:orgSlug/login" element={<LoginPage />} />
+            <Route path="/:orgSlug/register" element={<RegisterPage />} />
+            <Route path="/:orgSlug/check-email" element={<CheckEmailPage />} />
+            <Route path="/:orgSlug/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/:orgSlug/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/:orgSlug/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/:orgSlug/set-password" element={<ResetPasswordPage />} />
 
-        <Route element={<ProtectedRoute />}>
-          <Route element={<DashboardLayout />}>
-            <Route path="/home" element={<Suspense fallback={<LoadingState />}><HomePage /></Suspense>} />
-            <Route path="/dashboard" element={<Suspense fallback={<LoadingState />}><DashboardPage /></Suspense>} />
-            <Route path="/properties" element={<Suspense fallback={<LoadingState />}><PropertiesListPage /></Suspense>} />
-            <Route path="/properties/:id" element={<Suspense fallback={<LoadingState />}><PropertyDetailPage /></Suspense>} />
-            <Route path="/tenants" element={<Suspense fallback={<LoadingState />}><TenantsListPage /></Suspense>} />
-            <Route path="/message-manager" element={<Suspense fallback={<LoadingState />}><MessageManagerPage /></Suspense>} />
-            <Route path="/tenant-messages" element={<Suspense fallback={<LoadingState />}><TenantMessagesInboxPage /></Suspense>} />
-            <Route path="/owners" element={<Suspense fallback={<LoadingState />}><OwnersListPage /></Suspense>} />
-            <Route path="/leases" element={<Suspense fallback={<LoadingState />}><LeasesListPage /></Suspense>} />
-            <Route path="/my-lease" element={<Suspense fallback={<LoadingState />}><MyLeasePage /></Suspense>} />
-            <Route path="/invoices" element={<Suspense fallback={<LoadingState />}><InvoicesListPage /></Suspense>} />
-            <Route path="/payments" element={<Suspense fallback={<LoadingState />}><PaymentsListPage /></Suspense>} />
-            <Route path="/expenses" element={<Suspense fallback={<LoadingState />}><ExpensesListPage /></Suspense>} />
-            <Route path="/my-payments" element={<Suspense fallback={<LoadingState />}><MyPaymentsPage /></Suspense>} />
-            <Route path="/maintenance" element={<Suspense fallback={<LoadingState />}><MaintenanceRequestsListPage /></Suspense>} />
-            <Route path="/maintenance/:id" element={<Suspense fallback={<LoadingState />}><MaintenanceRequestDetailPage /></Suspense>} />
-            <Route path="/work-orders" element={<Suspense fallback={<LoadingState />}><WorkOrdersListPage /></Suspense>} />
-            <Route path="/vendors" element={<Suspense fallback={<LoadingState />}><VendorsListPage /></Suspense>} />
-            <Route path="/inspections" element={<Suspense fallback={<LoadingState />}><InspectionsListPage /></Suspense>} />
-            <Route path="/inspections/:id" element={<Suspense fallback={<LoadingState />}><InspectionDetailPage /></Suspense>} />
-            <Route path="/users" element={<Suspense fallback={<LoadingState />}><UsersRolesPage /></Suspense>} />
-            <Route path="/roles/:id" element={<Suspense fallback={<LoadingState />}><RoleDetailPage /></Suspense>} />
-            <Route path="/settings" element={<Suspense fallback={<LoadingState />}><SettingsPage /></Suspense>} />
-            <Route path="/reports/financial" element={<Suspense fallback={<LoadingState />}><ReportsPage /></Suspense>} />
-            <Route path="/notifications" element={<Suspense fallback={<LoadingState />}><NotificationsPage /></Suspense>} />
-            <Route path="/audit-logs" element={<Suspense fallback={<LoadingState />}><AuditLogsPage /></Suspense>} />
-            <Route path="/referrals" element={<Suspense fallback={<LoadingState />}><ReferralsPage /></Suspense>} />
-          </Route>
-        </Route>
+            {/* Platform console — creates/activates/deactivates tenant
+                organizations. Entirely separate auth from the tenant flows
+                above (see contexts/PlatformAdminContext.jsx). */}
+            <Route path="/platform-admin/login" element={<PlatformAdminLoginPage />} />
+            <Route element={<PlatformAdminProtectedRoute />}>
+              <Route
+                path="/platform-admin"
+                element={<Suspense fallback={<LoadingState />}><PlatformAdminDashboardPage /></Suspense>}
+              />
+            </Route>
 
-        <Route path="*" element={<Navigate to="/home" replace />} />
-      </Routes>
+            {/* The authenticated dashboard itself carries no org slug in
+                its URLs — the session already knows which organization,
+                and BrandingProvider fetches that organization's branding
+                automatically once signed in (see
+                api/organizations.js#getMyBranding). */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<DashboardLayout />}>
+                <Route path="/home" element={<Suspense fallback={<LoadingState />}><HomePage /></Suspense>} />
+                <Route path="/dashboard" element={<Suspense fallback={<LoadingState />}><DashboardPage /></Suspense>} />
+                <Route path="/properties" element={<Suspense fallback={<LoadingState />}><PropertiesListPage /></Suspense>} />
+                <Route path="/properties/:id" element={<Suspense fallback={<LoadingState />}><PropertyDetailPage /></Suspense>} />
+                <Route path="/tenants" element={<Suspense fallback={<LoadingState />}><TenantsListPage /></Suspense>} />
+                <Route path="/message-manager" element={<Suspense fallback={<LoadingState />}><MessageManagerPage /></Suspense>} />
+                <Route path="/tenant-messages" element={<Suspense fallback={<LoadingState />}><TenantMessagesInboxPage /></Suspense>} />
+                <Route path="/owners" element={<Suspense fallback={<LoadingState />}><OwnersListPage /></Suspense>} />
+                <Route path="/leases" element={<Suspense fallback={<LoadingState />}><LeasesListPage /></Suspense>} />
+                <Route path="/my-lease" element={<Suspense fallback={<LoadingState />}><MyLeasePage /></Suspense>} />
+                <Route path="/invoices" element={<Suspense fallback={<LoadingState />}><InvoicesListPage /></Suspense>} />
+                <Route path="/payments" element={<Suspense fallback={<LoadingState />}><PaymentsListPage /></Suspense>} />
+                <Route path="/expenses" element={<Suspense fallback={<LoadingState />}><ExpensesListPage /></Suspense>} />
+                <Route path="/my-payments" element={<Suspense fallback={<LoadingState />}><MyPaymentsPage /></Suspense>} />
+                <Route path="/maintenance" element={<Suspense fallback={<LoadingState />}><MaintenanceRequestsListPage /></Suspense>} />
+                <Route path="/maintenance/:id" element={<Suspense fallback={<LoadingState />}><MaintenanceRequestDetailPage /></Suspense>} />
+                <Route path="/work-orders" element={<Suspense fallback={<LoadingState />}><WorkOrdersListPage /></Suspense>} />
+                <Route path="/vendors" element={<Suspense fallback={<LoadingState />}><VendorsListPage /></Suspense>} />
+                <Route path="/inspections" element={<Suspense fallback={<LoadingState />}><InspectionsListPage /></Suspense>} />
+                <Route path="/inspections/:id" element={<Suspense fallback={<LoadingState />}><InspectionDetailPage /></Suspense>} />
+                <Route path="/users" element={<Suspense fallback={<LoadingState />}><UsersRolesPage /></Suspense>} />
+                <Route path="/roles/:id" element={<Suspense fallback={<LoadingState />}><RoleDetailPage /></Suspense>} />
+                <Route path="/settings" element={<Suspense fallback={<LoadingState />}><SettingsPage /></Suspense>} />
+                <Route path="/reports/financial" element={<Suspense fallback={<LoadingState />}><ReportsPage /></Suspense>} />
+                <Route path="/notifications" element={<Suspense fallback={<LoadingState />}><NotificationsPage /></Suspense>} />
+                <Route path="/audit-logs" element={<Suspense fallback={<LoadingState />}><AuditLogsPage /></Suspense>} />
+                <Route path="/referrals" element={<Suspense fallback={<LoadingState />}><ReferralsPage /></Suspense>} />
+              </Route>
+            </Route>
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </PlatformAdminProvider>
+      </BrandingProvider>
     </AuthProvider>
   );
 }

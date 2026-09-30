@@ -1,13 +1,16 @@
 import { useEffect } from 'react';
+import { useBranding } from '../contexts/BrandingContext.jsx';
 
-// Every route shared the same static <title> from index.html until now —
-// bad for tab-switching/history/bookmarks, and search engines that do
-// index a page (e.g. /login) see a generic title. Restores the previous
-// title on unmount so a modal-like page transition never leaves a stale one.
+// Every page's title is suffixed with the current organization's own name
+// (falling back to "NTS Real Estate System" wherever no tenant context
+// applies — see contexts/BrandingContext.jsx) rather than a hardcoded
+// brand — restores the previous title on unmount so a modal-like page
+// transition never leaves a stale one.
 export function useDocumentTitle(title) {
+  const { branding } = useBranding();
   useEffect(() => {
     const previous = document.title;
-    document.title = title ? `${title} — Surprise Real Estate` : 'Surprise Real Estate — Property Management System';
+    document.title = title ? `${title} — ${branding.name}` : branding.name;
     return () => { document.title = previous; };
-  }, [title]);
+  }, [title, branding.name]);
 }

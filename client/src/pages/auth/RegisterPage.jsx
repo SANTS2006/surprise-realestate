@@ -1,22 +1,24 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '../../layouts/AuthLayout.jsx';
 import { Field } from '../../components/ui/Input.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Alert } from '../../components/ui/Alert.jsx';
-import { authApi } from '../../api/auth.js';
+import { tenantAuthApi } from '../../api/tenantAuth.js';
 import { registerSchema } from '../../validations/auth.js';
 import { PUBLIC_SITE_URL } from '../../config/env.js';
 
 export default function RegisterPage() {
+  const { orgSlug } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [serverError, setServerError] = useState(null);
-  // A tenant's own share link (e.g. /register?ref=ADA-7Q7JW) pre-fills the
-  // field — still editable, and still fine if left blank or wrong (see
-  // auth.service.js#registerOrganization, a bad code never blocks signup).
+  // A tenant's own share link (e.g. /acme-realty/register?ref=ADA-7Q7JW)
+  // pre-fills the field — still editable, and still fine if left blank or
+  // wrong (see auth.service.js#registerOrganization, a bad code never
+  // blocks signup).
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(registerSchema),
     defaultValues: { referralCode: searchParams.get('ref') ?? '' },
@@ -25,7 +27,7 @@ export default function RegisterPage() {
   const onSubmit = async (body) => {
     setServerError(null);
     try {
-      await authApi.register(body);
+      await tenantAuthApi.register(orgSlug, body);
       navigate('/check-email', { state: { email: body.email }, replace: true });
     } catch (err) {
       setServerError(err.details?.map((d) => d.message).join(' ') || err.message);
@@ -38,7 +40,7 @@ export default function RegisterPage() {
       footer={
         <>
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
+          <Link to={`/${orgSlug}/login`} className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
             Sign in
           </Link>
         </>

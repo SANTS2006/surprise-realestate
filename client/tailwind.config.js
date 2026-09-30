@@ -5,38 +5,41 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Official Surprise Solution Group palette. Anchor points at their
-        // given hex values: 700=Primary Blue, 800=Dark Blue, 900=Deep Navy,
-        // 500=Bright Blue, 400=Cyan; 50/100/200/300/600/950 are interpolated
-        // to complete a full Tailwind-style scale. brand-600 is the default
-        // used for buttons/links/active-states throughout the app.
+        // Driven by CSS custom properties (see src/index.css for the
+        // static-palette defaults, and src/contexts/BrandingContext.jsx —
+        // which overrides them per tenant at runtime via
+        // src/utils/colorRamp.js) rather than fixed hex values, so every
+        // `bg-brand-600`, `text-accent-400`, etc. class already in use
+        // throughout the app repaints itself for whichever organization's
+        // colors are currently active, with zero changes to the
+        // components using those classes. brand-600 is this app's
+        // existing convention for "the tenant's primary color" (the
+        // default used for buttons/links/active-states); accent maps to
+        // the tenant's secondary color.
         brand: {
-          50: '#EAF4FB',
-          100: '#D0E7F6',
-          200: '#A8D2ED',
-          300: '#6EB8E0',
-          400: '#00A8D8', // Cyan
-          500: '#0078C8', // Bright Blue
-          600: '#00529B', // Primary Blue
-          700: '#003A6B', // Dark Blue
-          800: '#002956', // Deep Navy
-          900: '#001B3D',
-          950: '#00101F',
+          50: 'rgb(var(--color-brand-50) / <alpha-value>)',
+          100: 'rgb(var(--color-brand-100) / <alpha-value>)',
+          200: 'rgb(var(--color-brand-200) / <alpha-value>)',
+          300: 'rgb(var(--color-brand-300) / <alpha-value>)',
+          400: 'rgb(var(--color-brand-400) / <alpha-value>)',
+          500: 'rgb(var(--color-brand-500) / <alpha-value>)',
+          600: 'rgb(var(--color-brand-600) / <alpha-value>)',
+          700: 'rgb(var(--color-brand-700) / <alpha-value>)',
+          800: 'rgb(var(--color-brand-800) / <alpha-value>)',
+          900: 'rgb(var(--color-brand-900) / <alpha-value>)',
+          950: 'rgb(var(--color-brand-950) / <alpha-value>)',
         },
-        // Teal → Emerald, used sparingly for gradient accents (brand marks,
-        // hero touches, positive/success emphasis) — never a full
-        // replacement for `brand` in ordinary UI.
         accent: {
-          50: '#E8FBF6',
-          100: '#CFF7EC',
-          200: '#9FEFDA',
-          300: '#5FE4C4',
-          400: '#20D89A', // Emerald
-          500: '#00D4C0', // Teal
-          600: '#00A89B',
-          700: '#007D74',
-          800: '#00544D',
-          900: '#002E2A',
+          50: 'rgb(var(--color-accent-50) / <alpha-value>)',
+          100: 'rgb(var(--color-accent-100) / <alpha-value>)',
+          200: 'rgb(var(--color-accent-200) / <alpha-value>)',
+          300: 'rgb(var(--color-accent-300) / <alpha-value>)',
+          400: 'rgb(var(--color-accent-400) / <alpha-value>)',
+          500: 'rgb(var(--color-accent-500) / <alpha-value>)',
+          600: 'rgb(var(--color-accent-600) / <alpha-value>)',
+          700: 'rgb(var(--color-accent-700) / <alpha-value>)',
+          800: 'rgb(var(--color-accent-800) / <alpha-value>)',
+          900: 'rgb(var(--color-accent-900) / <alpha-value>)',
         },
         // The palette's metallic neutral — used sparingly for premium
         // borders/dividers/decorative touches, never as a full replacement

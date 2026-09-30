@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useAuth, getLastOrgSlug } from '../../contexts/AuthContext.jsx';
 import { LoadingState } from '../ui/Spinner.jsx';
 
 // UX-only gate: it decides whether to *render* a route, never whether an
@@ -18,7 +18,12 @@ export function ProtectedRoute() {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    // The dashboard routes carry no org slug of their own (the session
+    // already knows the organization) — fall back to whichever tenant's
+    // login this browser last used, or the neutral landing page if none
+    // is remembered (e.g. a fresh browser, or storage disabled).
+    const lastOrgSlug = getLastOrgSlug();
+    return <Navigate to={lastOrgSlug ? `/${lastOrgSlug}/login` : '/'} replace state={{ from: location }} />;
   }
 
   return <Outlet />;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, useParams, Link } from 'react-router-dom';
 import { MailCheck } from 'lucide-react';
 import { AuthLayout } from '../../layouts/AuthLayout.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -10,6 +10,7 @@ import { authApi } from '../../api/auth.js';
 // itself is never confirmed to exist or not from this screen (anti-
 // enumeration carries through from the API's generic response).
 export default function CheckEmailPage() {
+  const { orgSlug } = useParams();
   const location = useLocation();
   const email = location.state?.email;
   const [resent, setResent] = useState(false);
@@ -30,7 +31,7 @@ export default function CheckEmailPage() {
     <AuthLayout
       title="Check your email"
       footer={
-        <Link to="/login" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
+        <Link to={`/${orgSlug}/login`} className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
           Back to sign in
         </Link>
       }

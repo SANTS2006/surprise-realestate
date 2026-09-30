@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { AuthLayout } from '../../layouts/AuthLayout.jsx';
 import { Field } from '../../components/ui/Input.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -10,6 +10,7 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 import { loginSchema, mfaCodeSchema } from '../../validations/auth.js';
 
 export default function LoginPage() {
+  const { orgSlug } = useParams();
   const { login, completeMfaChallenge } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,7 +26,7 @@ export default function LoginPage() {
   const onSubmitCredentials = async ({ email, password }) => {
     setServerError(null);
     try {
-      const result = await login(email, password);
+      const result = await login(orgSlug, email, password);
       if (result.mfaRequired) {
         setMfaToken(result.mfaToken);
         setStep('mfa');
@@ -40,7 +41,7 @@ export default function LoginPage() {
   const onSubmitMfa = async ({ code }) => {
     setServerError(null);
     try {
-      await completeMfaChallenge(mfaToken, code);
+      await completeMfaChallenge(orgSlug, mfaToken, code);
       navigate(redirectTo, { replace: true });
     } catch (err) {
       setServerError(err.message);
@@ -83,7 +84,7 @@ export default function LoginPage() {
       footer={
         <>
           Don't have an account?{' '}
-          <Link to="/register" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
+          <Link to={`/${orgSlug}/register`} className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
             Create one
           </Link>
         </>
@@ -112,7 +113,7 @@ export default function LoginPage() {
             {...credentialsForm.register('password')}
           />
           <div className="mt-1.5 text-right">
-            <Link to="/forgot-password" className="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400">
+            <Link to={`/${orgSlug}/forgot-password`} className="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400">
               Forgot password?
             </Link>
           </div>

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight, LayoutDashboard } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useBranding } from '../contexts/BrandingContext.jsx';
 import { NAV_SECTIONS, isNavItemVisible } from '../config/navigation.js';
 
 function greeting() {
@@ -31,6 +32,7 @@ function QuickLinkCard({ to, icon: Icon, label }) {
 // (which is still one click away via the CTA below).
 export default function HomePage() {
   const { user } = useAuth();
+  const { branding } = useBranding();
   const roles = user?.roles ?? [];
 
   const quickLinks = NAV_SECTIONS.filter((item) => item.to !== '/home' && isNavItemVisible(item, roles)).flatMap((item) =>
@@ -50,7 +52,7 @@ export default function HomePage() {
           <p className="text-sm font-medium text-white/70">{greeting()}</p>
           <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">Welcome back, {user?.firstName}!</h1>
           <p className="mt-2 max-w-xl text-sm text-white/80">
-            Here's your starting point in Surprise Real Estate. Jump straight into what you manage, or head to the full dashboard for portfolio-wide analytics.
+            Here's your starting point in {branding.name}. Jump straight into what you manage, or head to the full dashboard for portfolio-wide analytics.
           </p>
           <Link to="/dashboard" className="mt-5 inline-block">
             <Button variant="secondary" className="bg-white/95 hover:bg-white">

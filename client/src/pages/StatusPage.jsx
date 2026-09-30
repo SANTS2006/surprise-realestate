@@ -62,7 +62,7 @@ export default function StatusPage() {
           <div className="flex items-center gap-2.5">
             <Logo size={36} />
             <div>
-              <p className="text-sm font-semibold leading-none">Surprise Real Estate</p>
+              <p className="text-sm font-semibold leading-none">NTS Real Estate System</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Property Management System</p>
             </div>
           </div>

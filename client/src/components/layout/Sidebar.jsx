@@ -4,6 +4,7 @@ import { ChevronDown, X } from 'lucide-react';
 import clsx from 'clsx';
 import { NAV_SECTIONS, isNavItemVisible } from '../../config/navigation.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useBranding } from '../../contexts/BrandingContext.jsx';
 import { Logo } from '../ui/Logo.jsx';
 
 function NavItemLink({ to, children, onNavigate }) {
@@ -62,11 +63,12 @@ function NavGroup({ item, onNavigate }) {
 }
 
 function BrandHeader({ onClose }) {
+  const { branding } = useBranding();
   return (
     <div className="flex items-center justify-between border-b border-slate-200 px-4 py-4 dark:border-slate-800">
       <div className="flex min-w-0 items-center gap-2">
         <Logo size={28} />
-        <span className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">Surprise Real Estate</span>
+        <span className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{branding.name}</span>
       </div>
       {onClose && (
         <button

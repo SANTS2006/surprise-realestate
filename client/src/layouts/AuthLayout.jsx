@@ -1,7 +1,11 @@
-import { Building2, ShieldCheck, TrendingUp, MessageCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Building2, ShieldCheck, TrendingUp, MessageCircle, SearchX } from 'lucide-react';
 import { Logo } from '../components/ui/Logo.jsx';
 import { ThemeToggle } from '../components/ui/ThemeToggle.jsx';
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js';
+import { useBranding } from '../contexts/BrandingContext.jsx';
+import { tenantAuthApi } from '../api/tenantAuth.js';
 import { PUBLIC_SITE_URL } from '../config/env.js';
 
 const HIGHLIGHTS = [
@@ -10,14 +14,58 @@ const HIGHLIGHTS = [
   { icon: ShieldCheck, text: 'Bank-grade security with role-based access' },
 ];
 
-// Shared shell for every unauthenticated screen (login, register, verify
-// email, forgot/reset password) — a modern, minimal split layout: a branded
-// panel on large screens, a soft gradient backdrop behind a glass form card
-// on every screen size. `key` on the root (passed by each page via the
-// route) restarts the entrance animation on every navigation between auth
-// screens, which is what reads as a transition between them.
+// Shared shell for every unauthenticated tenant screen (login, register,
+// verify email, forgot/reset password) — a modern, minimal split layout: a
+// branded panel on large screens, a soft gradient backdrop behind a glass
+// form card on every screen size. `key` on the root (passed by each page
+// via the route) restarts the entrance animation on every navigation
+// between auth screens, which is what reads as a transition between them.
+//
+// Every route this wraps is nested under /:orgSlug (see App.jsx) — on
+// mount this fetches that organization's branding and pushes it into
+// BrandingContext, which is what actually repaints the brand/accent colors
+// app-wide (see contexts/BrandingContext.jsx). A slug that doesn't resolve
+// to any organization renders a plain "not found" message instead of the
+// form; a slug that resolves but is deactivated still renders normally —
+// the login page's own submit handler is what surfaces that message, once
+// someone actually tries to sign in (see auth.service.js#login).
 export function AuthLayout({ title, description, children, footer }) {
+  const { orgSlug } = useParams();
+  const { branding, applyTenantBranding } = useBranding();
+  const [status, setStatus] = useState('loading'); // loading | ready | notFound
+
   useDocumentTitle(title);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus('loading');
+    tenantAuthApi.getBranding(orgSlug)
+      .then((res) => {
+        if (cancelled) return;
+        applyTenantBranding(res.data);
+        setStatus('ready');
+      })
+      .catch(() => {
+        if (!cancelled) setStatus('notFound');
+      });
+    return () => { cancelled = true; };
+  }, [orgSlug, applyTenantBranding]);
+
+  if (status === 'notFound') {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-3 bg-slate-50 px-4 text-center dark:bg-slate-950">
+        <SearchX size={40} className="text-slate-300 dark:text-slate-700" aria-hidden="true" />
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Organization not found</h1>
+        <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">
+          There's no organization at this address. Double-check the link, or contact whoever gave it to you.
+        </p>
+      </div>
+    );
+  }
+
+  if (status === 'loading') {
+    return <div className="h-screen bg-slate-50 dark:bg-slate-950" />;
+  }
 
   return (
     <div className="custom-scrollbar flex h-screen overflow-y-auto bg-gradient-to-br from-slate-50 via-brand-50/40 to-accent-50/30 dark:from-slate-950 dark:via-brand-950/40 dark:to-slate-900">
@@ -31,7 +79,7 @@ export function AuthLayout({ title, description, children, footer }) {
         <div className="relative flex items-center gap-3">
           <Logo size={44} />
           <div>
-            <p className="text-lg font-semibold leading-none">Surprise Real Estate</p>
+            <p className="text-lg font-semibold leading-none">{branding.name}</p>
             <p className="mt-1 text-sm text-white/70">Property Management System</p>
           </div>
         </div>
@@ -52,7 +100,7 @@ export function AuthLayout({ title, description, children, footer }) {
           </div>
         </div>
 
-        <p className="relative text-xs text-white/50">© {new Date().getFullYear()} Surprise Solution Group. All rights reserved.</p>
+        <p className="relative text-xs text-white/50">© {new Date().getFullYear()} {branding.name}. All rights reserved.</p>
       </div>
 
       {/* Form panel — decorative blurred blobs echo the brand panel, kept

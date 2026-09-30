@@ -4,6 +4,35 @@
 
 :root {
   color-scheme: light dark;
+
+  /* Default brand/accent ramps — the original static Surprise Solution
+     Group palette, expressed as "R G B" triples for Tailwind's
+     `rgb(var(--x) / <alpha-value>)` color pattern (see tailwind.config.js).
+     src/contexts/BrandingContext.jsx overrides these per tenant at
+     runtime; these defaults are what renders before that fetch resolves
+     (and for the platform-admin console, which has no tenant). */
+  --color-brand-50: 234 244 251;
+  --color-brand-100: 208 231 246;
+  --color-brand-200: 168 210 237;
+  --color-brand-300: 110 184 224;
+  --color-brand-400: 0 168 216;
+  --color-brand-500: 0 120 200;
+  --color-brand-600: 0 82 155;
+  --color-brand-700: 0 58 107;
+  --color-brand-800: 0 41 86;
+  --color-brand-900: 0 27 61;
+  --color-brand-950: 0 16 31;
+
+  --color-accent-50: 232 251 246;
+  --color-accent-100: 207 247 236;
+  --color-accent-200: 159 239 218;
+  --color-accent-300: 95 228 196;
+  --color-accent-400: 32 216 154;
+  --color-accent-500: 0 212 192;
+  --color-accent-600: 0 168 155;
+  --color-accent-700: 0 125 116;
+  --color-accent-800: 0 84 77;
+  --color-accent-900: 0 46 42;
 }
 
 @layer base {

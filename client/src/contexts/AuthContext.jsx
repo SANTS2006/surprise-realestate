@@ -1,7 +1,31 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { authApi } from '../api/auth.js';
+import { tenantAuthApi } from '../api/tenantAuth.js';
 
 const AuthContext = createContext(null);
+
+// Remembered per-browser only, never sent anywhere — the dashboard routes
+// themselves carry no org slug in the URL (the session already knows the
+// organization), but ProtectedRoute needs *some* slug to redirect an
+// expired/logged-out session back to the right tenant's own login page
+// instead of a bare, unscoped (and no longer valid) "/login".
+const LAST_ORG_SLUG_KEY = 'nts.lastOrgSlug';
+export function getLastOrgSlug() {
+  try {
+    return localStorage.getItem(LAST_ORG_SLUG_KEY);
+  } catch {
+    return null;
+  }
+}
+function rememberOrgSlug(orgSlug) {
+  try {
+    localStorage.setItem(LAST_ORG_SLUG_KEY, orgSlug);
+  } catch {
+    // Private browsing / storage disabled — losing this is a minor UX
+    // regression (redirect falls back to the neutral landing page), never
+    // a functional break.
+  }
+}
 
 // The single source of truth for "who is signed in" — every route guard
 // and permission-aware nav item reads from here, never from a token/cookie
@@ -37,15 +61,21 @@ export function AuthProvider({ children }) {
 
   // Returns the raw login response so the caller (LoginPage) can branch on
   // `mfaRequired` without this context needing to know about that flow.
-  const login = useCallback(async (email, password) => {
-    const res = await authApi.login({ email, password });
-    if (res.data.user) setUser(res.data.user);
+  // `orgSlug` identifies which tenant's login this is — see
+  // api/tenantAuth.js and server/src/routes/v1/tenantAuth.routes.js.
+  const login = useCallback(async (orgSlug, email, password) => {
+    const res = await tenantAuthApi.login(orgSlug, { email, password });
+    if (res.data.user) {
+      setUser(res.data.user);
+      rememberOrgSlug(orgSlug);
+    }
     return res.data;
   }, []);
 
-  const completeMfaChallenge = useCallback(async (mfaToken, code) => {
+  const completeMfaChallenge = useCallback(async (orgSlug, mfaToken, code) => {
     const res = await authApi.mfaChallenge({ mfaToken, code });
     setUser(res.data.user);
+    rememberOrgSlug(orgSlug);
     return res.data;
   }, []);
 
