@@ -45,7 +45,7 @@ function renderEmail({ headerLabel, eyebrow, heading, paragraphs, detailsRows, c
         <tr>
           <td style="vertical-align:middle;">
             <p style="margin:0;font-size:13px;font-weight:600;color:#334155;">Need help?</p>
-            <p style="margin:2px 0 0;font-size:12px;color:#94A3B8;">Contact the Surprise Real Estate support team.</p>
+            <p style="margin:2px 0 0;font-size:12px;color:#94A3B8;">Contact the NTS Real Estate System support team.</p>
           </td>
           <td align="right" style="vertical-align:middle;">
             <a href="mailto:${env.SUPPORT_EMAIL}" style="display:inline-block;border:1px solid #CBD5E1;color:#334155;font-size:11px;font-weight:700;letter-spacing:0.4px;text-decoration:none;padding:8px 16px;border-radius:999px;">SUPPORT</a>
@@ -65,8 +65,8 @@ function renderEmail({ headerLabel, eyebrow, heading, paragraphs, detailsRows, c
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                   <tr>
                     <td style="vertical-align:middle;">
-                      <p style="margin:0;font-size:17px;font-weight:700;color:#FFFFFF;">Surprise Real Estate</p>
-                      <p style="margin:2px 0 0;font-size:9px;font-weight:600;letter-spacing:1.5px;color:#A8C6E0;text-transform:uppercase;">Property Management</p>
+                      <p style="margin:0;font-size:17px;font-weight:700;color:#FFFFFF;">NTS Real Estate System</p>
+                      <p style="margin:2px 0 0;font-size:9px;font-weight:600;letter-spacing:1.5px;color:#A8C6E0;text-transform:uppercase;">Property Management Platform</p>
                     </td>
                     <td align="right" style="vertical-align:middle;">
                       <span style="display:inline-block;border:1px solid rgba(255,255,255,0.35);color:#FFFFFF;font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;padding:6px 12px;border-radius:999px;">${headerLabel}</span>
@@ -90,7 +90,7 @@ function renderEmail({ headerLabel, eyebrow, heading, paragraphs, detailsRows, c
             <tr>
               <td style="padding:18px 28px;background:#F8FAFC;border-top:1px solid #E2E8F0;">
                 <p style="margin:0;font-size:11px;color:#94A3B8;text-align:center;">This is an automated email. Please do not reply to this message.</p>
-                <p style="margin:4px 0 0;font-size:11px;color:#94A3B8;text-align:center;">© ${new Date().getFullYear()} Surprise Real Estate. All rights reserved.</p>
+                <p style="margin:4px 0 0;font-size:11px;color:#94A3B8;text-align:center;">© ${new Date().getFullYear()} NTS Real Estate System. All rights reserved.</p>
                 <p style="margin:4px 0 0;font-size:11px;color:#CBD5E1;text-align:center;font-style:italic;">Modern property management, done right.</p>
               </td>
             </tr>
@@ -104,13 +104,13 @@ function renderEmail({ headerLabel, eyebrow, heading, paragraphs, detailsRows, c
 export function verificationEmail(token) {
   const url = `${env.CLIENT_URL}/verify-email?token=${token}`;
   return {
-    subject: 'Verify your Surprise Real Estate account',
+    subject: 'Verify your NTS Real Estate System account',
     text: `Verify your email: ${url} (expires in 24 hours)`,
     html: renderEmail({
       headerLabel: 'Verify Email',
       eyebrow: 'Account verification',
       heading: 'Verify your email',
-      paragraphs: ['Confirm your email address to activate your Surprise Real Estate account.'],
+      paragraphs: ['Confirm your email address to activate your NTS Real Estate System account.'],
       detailsRows: [{ label: 'Link expires', value: '24 hours from now', valueColor: '#DC2626' }],
       cta: { icon: '✉️', heading: 'Confirm your email', description: 'One click and your account is ready to go.', href: url, buttonText: 'Verify Email' },
       disclaimer: "If you didn't create this account, you can safely ignore this email.",
@@ -121,13 +121,13 @@ export function verificationEmail(token) {
 export function inviteEmail(token, { organizationName, invitedByName }) {
   const url = `${env.CLIENT_URL}/set-password?token=${token}`;
   return {
-    subject: `You've been invited to ${organizationName} on Surprise Real Estate`,
-    text: `${invitedByName} invited you to join ${organizationName} on Surprise Real Estate. Set your password: ${url} (expires in 7 days)`,
+    subject: `You've been invited to ${organizationName} on NTS Real Estate System`,
+    text: `${invitedByName} invited you to join ${organizationName} on NTS Real Estate System. Set your password: ${url} (expires in 7 days)`,
     html: renderEmail({
       headerLabel: 'Invitation',
       eyebrow: "You're invited",
       heading: `Join ${organizationName}`,
-      paragraphs: [`<strong>${invitedByName}</strong> invited you to join <strong>${organizationName}</strong> on Surprise Real Estate.`],
+      paragraphs: [`<strong>${invitedByName}</strong> invited you to join <strong>${organizationName}</strong> on NTS Real Estate System.`],
       detailsRows: [
         { label: 'Organization', value: organizationName },
         { label: 'Invited by', value: invitedByName },
@@ -178,7 +178,7 @@ export function notificationEmail({ title, message }) {
       eyebrow: 'Update',
       heading: title,
       paragraphs: [message],
-      cta: { icon: '🔔', heading: 'View in your account', description: 'Open Surprise Real Estate to see the full details.', href: `${env.CLIENT_URL}/notifications`, buttonText: 'View Notifications' },
+      cta: { icon: '🔔', heading: 'View in your account', description: 'Open NTS Real Estate System to see the full details.', href: `${env.CLIENT_URL}/notifications`, buttonText: 'View Notifications' },
     }),
   };
 }
@@ -188,19 +188,48 @@ export function passwordResetEmail(token) {
   const now = new Date();
   const expires = new Date(now.getTime() + 15 * 60 * 1000);
   return {
-    subject: 'Reset your Surprise Real Estate password',
+    subject: 'Reset your NTS Real Estate System password',
     text: `Reset your password: ${url} (expires in 15 minutes)`,
     html: renderEmail({
       headerLabel: 'Password Reset',
       eyebrow: 'Security alert',
       heading: 'Reset your password',
-      paragraphs: ['We received a request to reset the password for your Surprise Real Estate account.'],
+      paragraphs: ['We received a request to reset the password for your NTS Real Estate System account.'],
       detailsRows: [
         { label: 'Requested at', value: dateTimeFmt.format(now) },
         { label: 'Expires at', value: dateTimeFmt.format(expires), valueColor: '#DC2626' },
       ],
       cta: { icon: '🔒', heading: 'Secure your account', description: 'This password reset link is valid for 15 minutes only.', href: url, buttonText: 'Reset Password' },
       disclaimer: "For your security, never share this reset link with anyone. If you didn't request this, you can safely ignore this email.",
+    }),
+  };
+}
+
+// Sent once, immediately after a platform admin creates a new tenant
+// organization — the only place a plaintext password is ever emailed in
+// this app. It's a one-time system-generated bootstrap credential (see
+// utils/defaultPassword.js for why it's deliberately short-lived-in-intent
+// rather than policy-strength), delivered privately to the organization's
+// own administrator so they can sign in and change it immediately.
+export function organizationCreatedEmail({ organizationName, adminFirstName, loginEmail, defaultPassword, loginUrl }) {
+  return {
+    subject: `${organizationName} is ready on NTS Real Estate System`,
+    text: `Hi ${adminFirstName}, your organization "${organizationName}" has been created on NTS Real Estate System. Sign in at ${loginUrl} with email ${loginEmail} and password ${defaultPassword}. Please change your password after signing in.`,
+    html: renderEmail({
+      headerLabel: 'Organization Created',
+      eyebrow: 'Welcome to NTS Real Estate System',
+      heading: `${organizationName} is ready`,
+      paragraphs: [
+        `Your organization, <strong>${organizationName}</strong>, has been created on NTS Real Estate System, and you've been set up as its administrator.`,
+        'Use the credentials below to sign in for the first time — for your security, please change your password as soon as you log in.',
+      ],
+      detailsRows: [
+        { label: 'Organization', value: organizationName },
+        { label: 'Login email', value: loginEmail },
+        { label: 'Temporary password', value: defaultPassword, valueColor: '#DC2626' },
+      ],
+      cta: { icon: '🏢', heading: 'Sign in to get started', description: 'Set up your properties, invite your team, and start managing tenants.', href: loginUrl, buttonText: 'Sign In' },
+      disclaimer: "This temporary password was generated automatically and sent only to this address. If you weren't expecting this, please contact the platform administrator.",
     }),
   };
 }

@@ -16,3 +16,25 @@ export function createOrganization(data, tx = prisma) {
 export function updateOrganization(id, data) {
   return prisma.organization.update({ where: { id }, data });
 }
+
+// Resolves the tenant for a path-based URL namespace (e.g. /acme-realty/login)
+// — the one place a slug becomes an organizationId. Case-sensitive by
+// design: slugs are normalized to lowercase at creation (see
+// utils/slug.js), so a mismatch here just means "no such tenant."
+export function findOrganizationBySlug(slug) {
+  return prisma.organization.findUnique({ where: { slug } });
+}
+
+export function findOrganizationBySlugExcludingId(slug, excludeId) {
+  return prisma.organization.findFirst({ where: { slug, id: { not: excludeId } } });
+}
+
+// Platform-admin only — every tenant, unfiltered. Never call this from a
+// tenant-scoped code path.
+export function findAllOrganizations() {
+  return prisma.organization.findMany({ orderBy: { createdAt: 'desc' } });
+}
+
+export function updateOrganizationStatus(id, status) {
+  return prisma.organization.update({ where: { id }, data: { status } });
+}

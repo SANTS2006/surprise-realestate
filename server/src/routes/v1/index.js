@@ -27,6 +27,8 @@ import { auditRemarksRouter } from './auditRemarks.routes.js';
 import { tenantMessagesRouter } from './tenantMessages.routes.js';
 import { referralsRouter } from './referrals.routes.js';
 import { publicRouter } from './public.routes.js';
+import { platformAdminRouter } from './platformAdmin.routes.js';
+import { tenantAuthRouter } from './tenantAuth.routes.js';
 
 // /settings is covered by PATCH /organizations/me (Phase 5) — organization
 // settings live in Organization.settings (JSONB), so no separate resource
@@ -41,6 +43,12 @@ v1Router.use('/health', healthRouter);
 // request gets rejected by one of those routers' auth check before Express
 // ever tries matching it against `/public`'s own routes.
 v1Router.use('/public', publicRouter);
+// Also mounted early for the same reason — /platform-admin and /orgs are
+// distinct static prefixes, but the root-mounted buildingsRouter/
+// unitsRouter/generateInvoiceRouter below would still swallow them first
+// if registered after those.
+v1Router.use('/platform-admin', platformAdminRouter);
+v1Router.use('/orgs/:orgSlug', tenantAuthRouter);
 v1Router.use('/auth', authRouter);
 v1Router.use('/users', usersRouter);
 v1Router.use('/organizations', organizationsRouter);

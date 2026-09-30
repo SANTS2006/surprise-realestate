@@ -19,7 +19,6 @@ import {
   enableMfa, disableMfa, activateIfPending,
 } from '../repositories/user.repository.js';
 import { assignRoleToUser, findRolesForUser, findRoleByName } from '../repositories/role.repository.js';
-import { findOrganizationById } from '../repositories/organization.repository.js';
 import {
   createEmailVerificationToken, findValidEmailVerificationToken,
   markEmailVerificationTokenUsed, invalidateOutstandingVerificationTokens,
@@ -41,7 +40,6 @@ import { recordReferralIfCodeValid } from './referral.service.js';
 import { generateUniqueReferralCode } from '../utils/referralCode.js';
 import { logger } from '../config/logger.js';
 import { serializeUser } from '../utils/serializers.js';
-import { env } from '../config/env.js';
 
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_TTL_MS = 15 * 60 * 1000;
@@ -75,19 +73,24 @@ export async function getCurrentUser(userId, organizationId) {
 
 // ── Registration ────────────────────────────────────────────────────────
 
-// Single-tenant deployment: this is one real estate company's system, not a
-// multi-org SaaS product, so registering an account never creates a new
-// organization — every new user joins the one organization configured via
-// PRIMARY_ORGANIZATION_ID, starting out with the least-privileged `tenant`
-// role. An administrator promotes them to a different role afterward from
-// the Users module — see role.service.js#setRolePermissionsRecord and the
-// role-assignment endpoints for how that works.
-export async function registerOrganization({ firstName, lastName, email, password, referralCode, agreedToTerms }, req) {
+// Multi-tenant: `organization` is resolved from the `:orgSlug` URL segment
+// by middleware/resolveTenantOrg.js before this ever runs — a self-service
+// registrant always joins the specific organization their branded
+// register page belongs to, starting out with the least-privileged
+// `tenant` role. An administrator promotes them to a different role
+// afterward from the Users module — see
+// role.service.js#setRolePermissionsRecord and the role-assignment
+// endpoints for how that works.
+export async function registerOrganization({ firstName, lastName, email, password, referralCode, agreedToTerms }, organization, req) {
   // Defense in depth — the validator already rejects a missing/false value
   // with a 422 before this ever runs, but a service function should never
   // trust that every caller is that route.
   if (!agreedToTerms) {
     throw AppError.badRequest('You must agree to the Terms & Conditions and Privacy Policy to create an account.');
+  }
+
+  if (organization.status !== 'active') {
+    throw AppError.forbidden('This organization has been deactivated and is not accepting new accounts. Please contact the platform administrator.');
   }
 
   const existing = await findUserByEmailGlobal(email);
@@ -98,17 +101,9 @@ export async function registerOrganization({ firstName, lastName, email, passwor
     throw AppError.conflict('An account with this email already exists.');
   }
 
-  const organization = await findOrganizationById(env.PRIMARY_ORGANIZATION_ID);
-  if (!organization) {
-    // Misconfiguration, not a user-facing error — the deployment's
-    // PRIMARY_ORGANIZATION_ID env var doesn't point at a real row.
-    logger.error({ orgId: env.PRIMARY_ORGANIZATION_ID }, 'PRIMARY_ORGANIZATION_ID does not match any organization');
-    throw AppError.internal('Registration is temporarily unavailable. Please try again later.');
-  }
-
   const tenantRole = await findRoleByName(organization.id, 'tenant');
   if (!tenantRole) {
-    logger.error({ orgId: organization.id }, 'Primary organization has no "tenant" role to assign at registration');
+    logger.error({ orgId: organization.id }, 'Organization has no "tenant" role to assign at registration');
     throw AppError.internal('Registration is temporarily unavailable. Please try again later.');
   }
 
@@ -190,12 +185,22 @@ export async function resendVerificationEmail(email, req) {
 
 // ── Login (session-based, browser) ──────────────────────────────────────
 
-export async function login({ email, password }, req) {
+// `organization` is resolved from the `:orgSlug` URL segment by
+// middleware/resolveTenantOrg.js — a deactivated organization is rejected
+// outright, before any credential is even checked, with the specific
+// message the product spec calls for. A user whose account belongs to a
+// *different* organization than the one they're signing in on is treated
+// identically to "no such user" — same generic message, same dummy
+// password verification for a constant-shape failure path — so this can
+// never be used to probe which organization a given email belongs to.
+export async function login({ email, password }, organization, req) {
+  if (organization.status !== 'active') {
+    throw AppError.forbidden('This company has been deactivated and all access has been revoked. Please contact the platform administrator.');
+  }
+
   const user = await findUserByEmailGlobal(email);
 
-  if (!user) {
-    // Constant-shape failure path — no early return before a password
-    // comparison would happen for a real user, to reduce timing signal.
+  if (!user || user.organizationId !== organization.id) {
     await verifyPassword('$argon2id$v=19$m=19456,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', password);
     throw AppError.unauthorized(INVALID_CREDENTIALS_MESSAGE);
   }
@@ -321,9 +326,12 @@ export async function changePassword(userId, organizationId, { currentPassword, 
   return { changed: true };
 }
 
-export async function forgotPassword(email, req) {
+// Same generic response regardless of email existence, organization match,
+// or organization status — a distinct response for "this org is suspended"
+// would let the form be used to probe which organizations are active.
+export async function forgotPassword(email, organization, req) {
   const user = await findUserByEmailGlobal(email);
-  if (user && user.status !== 'inactive') {
+  if (user && user.organizationId === organization.id && organization.status === 'active' && user.status !== 'inactive') {
     await invalidateOutstandingResetTokens(user.id);
     const rawToken = generateRawToken();
     await createPasswordResetToken(user.id, rawToken, new Date(Date.now() + PASSWORD_RESET_TTL_MS));
