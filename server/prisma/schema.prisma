@@ -204,6 +204,16 @@ model Organization {
   region             String?
   country            String?
   logoDocumentId     String?            @map("logo_document_id") @db.Uuid
+  // URL path segment this tenant's entire system lives under (e.g.
+  // /acme-realty/login, /acme-realty/dashboard) — set once by the platform
+  // admin at creation, immutable afterward since it's baked into every link
+  // a tenant's users might have bookmarked or been emailed.
+  slug               String             @unique
+  // Hex colors chosen by the platform admin at creation — applied as CSS
+  // custom properties across this tenant's entire system (auth pages
+  // through the authenticated dashboard). See client/src/contexts/BrandingContext.jsx.
+  primaryColor       String             @default("#0f172a") @map("primary_color")
+  secondaryColor     String             @default("#0ea5e9") @map("secondary_color")
   settings           Json               @default("{}")
   status             OrganizationStatus @default(active)
   createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz
@@ -943,4 +953,27 @@ model Referral {
   @@index([organizationId])
   @@index([referrerId])
   @@map("referrals")
+}
+
+// Platform-level operator, structurally separate from Organization/User —
+// intentionally NOT organizationId-scoped and never has an `organizationId`
+// on its own row. Manages the Organization table itself (create tenants,
+// activate/deactivate) through a dedicated auth flow (session keys
+// `req.session.platformAdminId`, never `req.session.userId`) and dedicated
+// middleware (`authenticatePlatformAdmin`), kept structurally apart from
+// every tenant-scoped route so a platform-admin session can never be
+// mistaken for — or granted — access to any tenant's operational data.
+model PlatformAdmin {
+  id                  String    @id @default(uuid()) @db.Uuid
+  firstName           String    @map("first_name")
+  lastName            String    @map("last_name")
+  email               String    @unique
+  passwordHash        String    @map("password_hash")
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until") @db.Timestamptz
+  lastLoginAt         DateTime? @map("last_login_at") @db.Timestamptz
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("platform_admins")
 }
