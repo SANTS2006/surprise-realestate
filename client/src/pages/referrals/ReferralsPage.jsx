@@ -10,6 +10,7 @@ import { Pagination } from '../../components/ui/Pagination.jsx';
 import { Table, Thead, Tbody, Tr, Th, Td } from '../../components/ui/Table.jsx';
 import { referralsApi } from '../../api/referrals.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useBranding } from '../../contexts/BrandingContext.jsx';
 import { CAN_MANAGE_REFERRALS, canAny } from '../../config/capabilities.js';
 import { formatCurrency } from '../../utils/currency.js';
 
@@ -18,7 +19,9 @@ const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' });
 
 function ReferralCodeCard({ code }) {
   const [copied, setCopied] = useState(false);
-  const shareLink = `${window.location.origin}/register?ref=${code}`;
+  const { branding } = useBranding();
+  // The link goes to this company's own branded register page.
+  const shareLink = `${window.location.origin}/${branding.slug}/register?ref=${code}`;
 
   const copy = async (value) => {
     await navigator.clipboard.writeText(value);

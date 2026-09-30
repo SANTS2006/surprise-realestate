@@ -10,6 +10,13 @@ const AuthContext = createContext(null);
 // expired/logged-out session back to the right tenant's own login page
 // instead of a bare, unscoped (and no longer valid) "/login".
 const LAST_ORG_SLUG_KEY = 'nts.lastOrgSlug';
+// Where to send someone after they sign out or their session ends: their
+// own company's login page, never a generic/platform one.
+export function getLoginPath() {
+  const slug = getLastOrgSlug();
+  return slug ? `/${slug}/login` : '/';
+}
+
 export function getLastOrgSlug() {
   try {
     return localStorage.getItem(LAST_ORG_SLUG_KEY);
@@ -17,7 +24,7 @@ export function getLastOrgSlug() {
     return null;
   }
 }
-function rememberOrgSlug(orgSlug) {
+export function rememberOrgSlug(orgSlug) {
   try {
     localStorage.setItem(LAST_ORG_SLUG_KEY, orgSlug);
   } catch {

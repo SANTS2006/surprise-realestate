@@ -5,7 +5,7 @@ import { ThemeToggle } from '../ui/ThemeToggle.jsx';
 import { UserAvatar } from '../ui/UserAvatar.jsx';
 import { Logo } from '../ui/Logo.jsx';
 import { Button } from '../ui/Button.jsx';
-import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useAuth, getLoginPath } from '../../contexts/AuthContext.jsx';
 import { notificationsApi } from '../../api/notifications.js';
 
 function useOutsideClick(ref, onOutside) {
@@ -39,7 +39,7 @@ export function Topbar({ onMenuClick }) {
     setLoggingOut(true);
     try {
       await logout();
-      navigate('/login', { replace: true });
+      navigate(getLoginPath(), { replace: true });
     } catch {
       setLoggingOut(false);
     }

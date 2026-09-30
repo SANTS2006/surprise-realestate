@@ -12,6 +12,7 @@ import {
   generateRecoveryCodes, hashRecoveryCode,
 } from '../auth/mfa.js';
 import { sendMail } from '../integrations/email/mailer.js';
+import { findOrganizationById } from '../repositories/organization.repository.js';
 import { verificationEmail, passwordResetEmail } from '../integrations/email/templates.js';
 import {
   findUserById, findUserByEmailGlobal, findUserByIdUnscoped, createUser, setPasswordHash,
@@ -137,7 +138,7 @@ export async function registerOrganization({ firstName, lastName, email, passwor
     req,
   });
 
-  const { subject, html, text } = verificationEmail(result.rawToken);
+  const { subject, html, text } = verificationEmail(result.rawToken, organization);
   await sendMail({ to: result.user.email, subject, html, text });
 
   // A bonus-program side effect, never a registration gate — an invalid
@@ -165,16 +166,24 @@ export async function verifyEmail(rawToken, req) {
   await markEmailVerificationTokenUsed(tokenRow.id);
   await audit({ organizationId: user.organizationId, userId: user.id, action: 'user.email_verified', entityType: 'user', entityId: user.id, req });
 
-  return { verified: true };
+  // The organization's own slug lets the client send the user on to *their*
+  // company's login page even if the verification link was opened without
+  // (or with the wrong) slug in its URL.
+  const organization = await findOrganizationById(user.organizationId);
+  return { verified: true, orgSlug: organization?.slug ?? null };
 }
 
 export async function resendVerificationEmail(email, req) {
   const user = await findUserByEmailGlobal(email);
   if (user && !user.emailVerified) {
+    const organization = await findOrganizationById(user.organizationId);
+    if (!organization || organization.status !== 'active') {
+      return { message: 'If an account with that email exists and is unverified, a new verification link has been sent.' };
+    }
     await invalidateOutstandingVerificationTokens(user.id);
     const rawToken = generateRawToken();
     await createEmailVerificationToken(user.id, rawToken, new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS));
-    const { subject, html, text } = verificationEmail(rawToken);
+    const { subject, html, text } = verificationEmail(rawToken, organization);
     await sendMail({ to: user.email, subject, html, text });
     await audit({ organizationId: user.organizationId, userId: user.id, action: 'user.verification_resent', entityType: 'user', entityId: user.id, req });
   }
@@ -335,7 +344,7 @@ export async function forgotPassword(email, organization, req) {
     await invalidateOutstandingResetTokens(user.id);
     const rawToken = generateRawToken();
     await createPasswordResetToken(user.id, rawToken, new Date(Date.now() + PASSWORD_RESET_TTL_MS));
-    const { subject, html, text } = passwordResetEmail(rawToken);
+    const { subject, html, text } = passwordResetEmail(rawToken, organization);
     await sendMail({ to: user.email, subject, html, text });
     await audit({ organizationId: user.organizationId, userId: user.id, action: 'user.password_reset_requested', entityType: 'user', entityId: user.id, req });
   }

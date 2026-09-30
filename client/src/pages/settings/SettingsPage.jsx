@@ -10,7 +10,7 @@ import { MfaSection } from '../../components/settings/MfaSection.jsx';
 import { OrganizationForm } from '../../components/settings/OrganizationForm.jsx';
 import { ProfilePictureCard } from '../../components/settings/ProfilePictureCard.jsx';
 import { authApi } from '../../api/auth.js';
-import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useAuth, getLoginPath } from '../../contexts/AuthContext.jsx';
 import { CAN_MANAGE_ORGANIZATION, CAN_VIEW_ORGANIZATION, canAny } from '../../config/capabilities.js';
 
 function AccountTab() {
@@ -25,7 +25,7 @@ function AccountTab() {
     try {
       await authApi.logoutAll();
       await logout();
-      navigate('/login', { replace: true });
+      navigate(getLoginPath(), { replace: true });
     } catch (err) {
       setSignOutError(err.message);
     } finally {

@@ -1,7 +1,7 @@
 import { createContext, useContext, useCallback, useEffect, useState, useMemo } from 'react';
 import { organizationsApi } from '../api/organizations.js';
 import { applyColorRamp } from '../utils/colorRamp.js';
-import { useAuth } from './AuthContext.jsx';
+import { useAuth, rememberOrgSlug } from './AuthContext.jsx';
 
 const BrandingContext = createContext(null);
 
@@ -46,7 +46,12 @@ export function BrandingProvider({ children }) {
       return;
     }
     organizationsApi.getMyBranding()
-      .then((res) => setDashboardBranding(res.data))
+      .then((res) => {
+        setDashboardBranding(res.data);
+        // Keeps "which company is this browser on" current even when the
+        // session was restored rather than freshly signed in.
+        if (res.data.slug) rememberOrgSlug(res.data.slug);
+      })
       .catch(() => {});
   }, [isAuthenticated]);
 

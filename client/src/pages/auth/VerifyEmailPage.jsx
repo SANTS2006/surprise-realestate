@@ -11,6 +11,11 @@ export default function VerifyEmailPage() {
   const token = searchParams.get('token');
   const [status, setStatus] = useState('verifying'); // 'verifying' | 'success' | 'error'
   const [errorMessage, setErrorMessage] = useState(null);
+  // The server reports which company the verified account belongs to, so
+  // the sign-in link is right even if this page was opened under a
+  // different slug than the account's own.
+  const [accountSlug, setAccountSlug] = useState(null);
+  const loginSlug = accountSlug ?? orgSlug;
 
   useEffect(() => {
     if (!token) {
@@ -19,7 +24,10 @@ export default function VerifyEmailPage() {
       return;
     }
     authApi.verifyEmail(token)
-      .then(() => setStatus('success'))
+      .then((res) => {
+        setAccountSlug(res?.data?.orgSlug ?? null);
+        setStatus('success');
+      })
       .catch((err) => {
         setStatus('error');
         setErrorMessage(err.message);
@@ -34,7 +42,7 @@ export default function VerifyEmailPage() {
         <div className="flex flex-col items-center gap-4 text-center">
           <CheckCircle2 size={40} className="text-emerald-500" aria-hidden="true" />
           <p className="text-sm text-slate-600 dark:text-slate-400">Your email address has been verified. You can now sign in.</p>
-          <Link to={`/${orgSlug}/login`} className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
+          <Link to={`/${loginSlug}/login`} className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
             Continue to sign in
           </Link>
         </div>

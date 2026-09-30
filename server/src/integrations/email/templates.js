@@ -2,6 +2,24 @@ import { env } from '../../config/env.js';
 
 const dateTimeFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeStyle: 'short' });
 
+const PLATFORM_NAME = 'NTS Real Estate System';
+const DEFAULT_PRIMARY = '#002956';
+const DEFAULT_SECONDARY = '#0078C8';
+
+// Every email is sent on behalf of one real estate organization: its name,
+// brand colors, contact address, and — crucially — its own slug-namespaced
+// links (`/<slug>/verify-email`, `/<slug>/login`, …) are used throughout, so
+// a recipient always lands on their own company's pages and never on the
+// platform's. `org` is the organization record (name, slug, email,
+// primaryColor, secondaryColor).
+function safeColor(value, fallback) {
+  return /^#[0-9a-fA-F]{6}$/.test(value ?? '') ? value : fallback;
+}
+
+export function orgUrl(org, path = '/login') {
+  return `${env.CLIENT_URL}/${org.slug}${path}`;
+}
+
 // Shared branded shell for every transactional email — a navy header band
 // (wordmark + a static pill naming the email's purpose), an eyebrow/heading/
 // body, an optional details table, an optional CTA panel with a button, and
@@ -9,7 +27,11 @@ const dateTimeFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeSt
 // pre-escaped/plain text (no HTML from user input ever reaches here) since
 // none of these templates render anything other than our own copy and
 // already-trusted domain data (org names, property/unit labels, dates).
-function renderEmail({ headerLabel, eyebrow, heading, paragraphs, detailsRows, cta, disclaimer }) {
+function renderEmail({ org, headerLabel, eyebrow, heading, paragraphs, detailsRows, cta, disclaimer }) {
+  const brandName = escapeHtml(org?.name ?? PLATFORM_NAME);
+  const primary = safeColor(org?.primaryColor, DEFAULT_PRIMARY);
+  const secondary = safeColor(org?.secondaryColor, DEFAULT_SECONDARY);
+  const supportEmail = org?.email || env.SUPPORT_EMAIL;
   const detailsHtml = detailsRows?.length
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border:1px solid #E2E8F0;border-radius:8px;background:#F8FAFC;overflow:hidden;">
         ${detailsRows.map(({ label, value, valueColor }, i) => {
@@ -31,7 +53,7 @@ function renderEmail({ headerLabel, eyebrow, heading, paragraphs, detailsRows, c
           </div>
           <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#0F172A;">${cta.heading}</p>
           <p style="margin:0 0 18px;font-size:13px;color:#64748B;">${cta.description}</p>
-          <a href="${cta.href}" style="display:inline-block;background:#00529B;color:#FFFFFF;font-size:14px;font-weight:700;text-decoration:none;padding:12px 32px;border-radius:8px;">${cta.buttonText}</a>
+          <a href="${cta.href}" style="display:inline-block;background:${primary};color:#FFFFFF;font-size:14px;font-weight:700;text-decoration:none;padding:12px 32px;border-radius:8px;">${cta.buttonText}</a>
         </td></tr>
       </table>`
     : '';
@@ -40,15 +62,15 @@ function renderEmail({ headerLabel, eyebrow, heading, paragraphs, detailsRows, c
     ? `<p style="margin:0 0 4px;font-size:12px;color:#94A3B8;">${disclaimer}</p>`
     : '';
 
-  const supportHtml = env.SUPPORT_EMAIL
+  const supportHtml = supportEmail
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;padding-top:20px;border-top:1px solid #E2E8F0;">
         <tr>
           <td style="vertical-align:middle;">
             <p style="margin:0;font-size:13px;font-weight:600;color:#334155;">Need help?</p>
-            <p style="margin:2px 0 0;font-size:12px;color:#94A3B8;">Contact the NTS Real Estate System support team.</p>
+            <p style="margin:2px 0 0;font-size:12px;color:#94A3B8;">Contact the ${brandName} team.</p>
           </td>
           <td align="right" style="vertical-align:middle;">
-            <a href="mailto:${env.SUPPORT_EMAIL}" style="display:inline-block;border:1px solid #CBD5E1;color:#334155;font-size:11px;font-weight:700;letter-spacing:0.4px;text-decoration:none;padding:8px 16px;border-radius:999px;">SUPPORT</a>
+            <a href="mailto:${supportEmail}" style="display:inline-block;border:1px solid #CBD5E1;color:#334155;font-size:11px;font-weight:700;letter-spacing:0.4px;text-decoration:none;padding:8px 16px;border-radius:999px;">SUPPORT</a>
           </td>
         </tr>
       </table>`
@@ -61,12 +83,12 @@ function renderEmail({ headerLabel, eyebrow, heading, paragraphs, detailsRows, c
         <td align="center">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#FFFFFF;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,0.08);">
             <tr>
-              <td style="background:#002956;padding:22px 28px;">
+              <td style="background:${primary};padding:22px 28px;">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                   <tr>
                     <td style="vertical-align:middle;">
-                      <p style="margin:0;font-size:17px;font-weight:700;color:#FFFFFF;">NTS Real Estate System</p>
-                      <p style="margin:2px 0 0;font-size:9px;font-weight:600;letter-spacing:1.5px;color:#A8C6E0;text-transform:uppercase;">Property Management Platform</p>
+                      <p style="margin:0;font-size:17px;font-weight:700;color:#FFFFFF;">${brandName}</p>
+                      <p style="margin:2px 0 0;font-size:9px;font-weight:600;letter-spacing:1.5px;color:#FFFFFF;opacity:0.7;text-transform:uppercase;">Property Management</p>
                     </td>
                     <td align="right" style="vertical-align:middle;">
                       <span style="display:inline-block;border:1px solid rgba(255,255,255,0.35);color:#FFFFFF;font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;padding:6px 12px;border-radius:999px;">${headerLabel}</span>
@@ -77,7 +99,7 @@ function renderEmail({ headerLabel, eyebrow, heading, paragraphs, detailsRows, c
             </tr>
             <tr>
               <td style="padding:32px 28px;">
-                <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:#0078C8;">${eyebrow}</p>
+                <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:${secondary};">${eyebrow}</p>
                 <h1 style="margin:0 0 14px;font-size:22px;font-weight:700;color:#0F172A;">${heading}</h1>
                 <p style="margin:0 0 4px;font-size:14px;color:#475569;">Hello,</p>
                 ${paragraphs.map((p) => `<p style="margin:6px 0;font-size:14px;line-height:1.6;color:#475569;">${p}</p>`).join('')}
@@ -90,8 +112,8 @@ function renderEmail({ headerLabel, eyebrow, heading, paragraphs, detailsRows, c
             <tr>
               <td style="padding:18px 28px;background:#F8FAFC;border-top:1px solid #E2E8F0;">
                 <p style="margin:0;font-size:11px;color:#94A3B8;text-align:center;">This is an automated email. Please do not reply to this message.</p>
-                <p style="margin:4px 0 0;font-size:11px;color:#94A3B8;text-align:center;">© ${new Date().getFullYear()} NTS Real Estate System. All rights reserved.</p>
-                <p style="margin:4px 0 0;font-size:11px;color:#CBD5E1;text-align:center;font-style:italic;">Modern property management, done right.</p>
+                <p style="margin:4px 0 0;font-size:11px;color:#94A3B8;text-align:center;">© ${new Date().getFullYear()} ${brandName}. All rights reserved.</p>
+                <p style="margin:4px 0 0;font-size:11px;color:#CBD5E1;text-align:center;font-style:italic;">Powered by ${PLATFORM_NAME}</p>
               </td>
             </tr>
           </table>
@@ -101,16 +123,17 @@ function renderEmail({ headerLabel, eyebrow, heading, paragraphs, detailsRows, c
   </body></html>`;
 }
 
-export function verificationEmail(token) {
-  const url = `${env.CLIENT_URL}/verify-email?token=${token}`;
+export function verificationEmail(token, org) {
+  const url = orgUrl(org, `/verify-email?token=${token}`);
   return {
-    subject: 'Verify your NTS Real Estate System account',
-    text: `Verify your email: ${url} (expires in 24 hours)`,
+    subject: `Verify your ${org.name} account`,
+    text: `Verify your email for ${org.name}: ${url} (expires in 24 hours)`,
     html: renderEmail({
+      org,
       headerLabel: 'Verify Email',
       eyebrow: 'Account verification',
       heading: 'Verify your email',
-      paragraphs: ['Confirm your email address to activate your NTS Real Estate System account.'],
+      paragraphs: [`Confirm your email address to activate your ${escapeHtml(org.name)} account.`],
       detailsRows: [{ label: 'Link expires', value: '24 hours from now', valueColor: '#DC2626' }],
       cta: { icon: '✉️', heading: 'Confirm your email', description: 'One click and your account is ready to go.', href: url, buttonText: 'Verify Email' },
       disclaimer: "If you didn't create this account, you can safely ignore this email.",
@@ -118,19 +141,22 @@ export function verificationEmail(token) {
   };
 }
 
-export function inviteEmail(token, { organizationName, invitedByName }) {
-  const url = `${env.CLIENT_URL}/set-password?token=${token}`;
+export function inviteEmail(token, { org, invitedByName }) {
+  const url = orgUrl(org, `/set-password?token=${token}`);
+  const organizationName = escapeHtml(org.name);
+  const inviter = escapeHtml(invitedByName);
   return {
-    subject: `You've been invited to ${organizationName} on NTS Real Estate System`,
-    text: `${invitedByName} invited you to join ${organizationName} on NTS Real Estate System. Set your password: ${url} (expires in 7 days)`,
+    subject: `You've been invited to join ${org.name}`,
+    text: `${invitedByName} invited you to join ${org.name}. Set your password: ${url} (expires in 7 days)`,
     html: renderEmail({
+      org,
       headerLabel: 'Invitation',
       eyebrow: "You're invited",
       heading: `Join ${organizationName}`,
-      paragraphs: [`<strong>${invitedByName}</strong> invited you to join <strong>${organizationName}</strong> on NTS Real Estate System.`],
+      paragraphs: [`<strong>${inviter}</strong> invited you to join <strong>${organizationName}</strong>.`],
       detailsRows: [
         { label: 'Organization', value: organizationName },
-        { label: 'Invited by', value: invitedByName },
+        { label: 'Invited by', value: inviter },
         { label: 'Link expires', value: '7 days from now', valueColor: '#DC2626' },
       ],
       cta: { icon: '🔑', heading: 'Set your password', description: 'Activate your account to get started.', href: url, buttonText: 'Accept Invitation' },
@@ -139,7 +165,7 @@ export function inviteEmail(token, { organizationName, invitedByName }) {
   };
 }
 
-export function inspectionScheduledEmail({ propertyName, unitLabel, inspectionType, inspectionDate }) {
+export function inspectionScheduledEmail({ org, propertyName, unitLabel, inspectionType, inspectionDate }) {
   const formattedDate = new Date(inspectionDate).toLocaleDateString('en-US', { dateStyle: 'long' });
   const where = unitLabel ? `${propertyName} — ${unitLabel}` : propertyName;
   const typeLabel = inspectionType.replace('_', ' ');
@@ -147,6 +173,7 @@ export function inspectionScheduledEmail({ propertyName, unitLabel, inspectionTy
     subject: `Upcoming inspection at ${where}`,
     text: `A ${typeLabel} inspection has been scheduled at ${where} on ${formattedDate}.`,
     html: renderEmail({
+      org,
       headerLabel: 'Inspection Notice',
       eyebrow: 'Maintenance',
       heading: 'Upcoming inspection',
@@ -156,7 +183,7 @@ export function inspectionScheduledEmail({ propertyName, unitLabel, inspectionTy
         { label: 'Type', value: typeLabel },
         { label: 'Date', value: formattedDate },
       ],
-      cta: { icon: '📋', heading: 'Prepare for your inspection', description: 'Please make sure the unit is accessible around this time.', href: `${env.CLIENT_URL}/inspections`, buttonText: 'View Details' },
+      cta: { icon: '📋', heading: 'Prepare for your inspection', description: 'Please make sure the unit is accessible around this time.', href: orgUrl(org, '/login?next=/inspections'), buttonText: 'Sign in to view' },
       disclaimer: 'Contact your property manager if you have any questions or need to reschedule.',
     }),
   };
@@ -169,32 +196,34 @@ export function inspectionScheduledEmail({ propertyName, unitLabel, inspectionTy
 // notify({ sendEmail: false })). Deliberately plain: it has no token/URL of
 // its own, only whatever title/message the calling service already wrote
 // for the in-app notification.
-export function notificationEmail({ title, message }) {
+export function notificationEmail({ org, title, message }) {
   return {
     subject: title,
     text: message,
     html: renderEmail({
+      org,
       headerLabel: 'Notification',
       eyebrow: 'Update',
       heading: title,
       paragraphs: [message],
-      cta: { icon: '🔔', heading: 'View in your account', description: 'Open NTS Real Estate System to see the full details.', href: `${env.CLIENT_URL}/notifications`, buttonText: 'View Notifications' },
+      cta: { icon: '🔔', heading: 'View in your account', description: `Sign in to ${escapeHtml(org.name)} to see the full details.`, href: orgUrl(org, '/login?next=/notifications'), buttonText: 'View Notifications' },
     }),
   };
 }
 
-export function passwordResetEmail(token) {
-  const url = `${env.CLIENT_URL}/reset-password?token=${token}`;
+export function passwordResetEmail(token, org) {
+  const url = orgUrl(org, `/reset-password?token=${token}`);
   const now = new Date();
   const expires = new Date(now.getTime() + 15 * 60 * 1000);
   return {
-    subject: 'Reset your NTS Real Estate System password',
+    subject: `Reset your ${org.name} password`,
     text: `Reset your password: ${url} (expires in 15 minutes)`,
     html: renderEmail({
+      org,
       headerLabel: 'Password Reset',
       eyebrow: 'Security alert',
       heading: 'Reset your password',
-      paragraphs: ['We received a request to reset the password for your NTS Real Estate System account.'],
+      paragraphs: [`We received a request to reset the password for your ${escapeHtml(org.name)} account.`],
       detailsRows: [
         { label: 'Requested at', value: dateTimeFmt.format(now) },
         { label: 'Expires at', value: dateTimeFmt.format(expires), valueColor: '#DC2626' },
@@ -211,16 +240,18 @@ export function passwordResetEmail(token) {
 // utils/defaultPassword.js for why it's deliberately short-lived-in-intent
 // rather than policy-strength), delivered privately to the organization's
 // own administrator so they can sign in and change it immediately.
-export function organizationCreatedEmail({ organizationName, adminFirstName, loginEmail, defaultPassword, loginUrl }) {
+export function organizationCreatedEmail({ org, adminFirstName, loginEmail, defaultPassword, loginUrl }) {
+  const organizationName = escapeHtml(org.name);
   return {
-    subject: `${organizationName} is ready on NTS Real Estate System`,
-    text: `Hi ${adminFirstName}, your organization "${organizationName}" has been created on NTS Real Estate System. Sign in at ${loginUrl} with email ${loginEmail} and password ${defaultPassword}. Please change your password after signing in.`,
+    subject: `${org.name} is ready`,
+    text: `Hi ${adminFirstName}, your organization "${org.name}" has been created. Sign in at ${loginUrl} with email ${loginEmail} and password ${defaultPassword}. Please change your password after signing in.`,
     html: renderEmail({
+      org,
       headerLabel: 'Organization Created',
-      eyebrow: 'Welcome to NTS Real Estate System',
+      eyebrow: `Welcome to ${organizationName}`,
       heading: `${organizationName} is ready`,
       paragraphs: [
-        `Your organization, <strong>${organizationName}</strong>, has been created on NTS Real Estate System, and you've been set up as its administrator.`,
+        `Your organization, <strong>${organizationName}</strong>, has been created, and you've been set up as its administrator.`,
         'Use the credentials below to sign in for the first time — for your security, please change your password as soon as you log in.',
       ],
       detailsRows: [
@@ -246,12 +277,13 @@ function escapeHtml(value) {
 
 // Sent to a listing's assigned agent(s) when a visitor submits the "Request
 // a viewing" form on the public site (see publicInquiry.service.js).
-export function listingInquiryEmail({ listingTitle, firstName, lastName, email, phone, message }) {
+export function listingInquiryEmail({ org, listingTitle, firstName, lastName, email, phone, message }) {
   const name = `${escapeHtml(firstName)} ${escapeHtml(lastName)}`;
   return {
     subject: `New inquiry: ${listingTitle}`,
     text: `${name} (${email}, ${phone}) is interested in ${listingTitle}:\n\n${message}`,
     html: renderEmail({
+      org,
       headerLabel: 'New Inquiry',
       eyebrow: 'Listing inquiry',
       heading: listingTitle,
@@ -267,12 +299,13 @@ export function listingInquiryEmail({ listingTitle, firstName, lastName, email, 
 
 // Sent to the organization's general inbox from the public site's Contact
 // page (see publicInquiry.service.js) — not tied to any specific listing.
-export function generalContactEmail({ firstName, lastName, email, phone, message }) {
+export function generalContactEmail({ org, firstName, lastName, email, phone, message }) {
   const name = `${escapeHtml(firstName)} ${escapeHtml(lastName)}`;
   return {
     subject: `New contact form message from ${name}`,
     text: `${name} (${email}, ${phone}) sent:\n\n${message}`,
     html: renderEmail({
+      org,
       headerLabel: 'Contact Form',
       eyebrow: 'Website inquiry',
       heading: 'New message from the website',

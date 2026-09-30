@@ -173,7 +173,7 @@ export async function createOrganizationByPlatformAdmin({
   const loginUrl = `${env.CLIENT_URL}/${slug}/login`;
   try {
     const { subject, html, text } = organizationCreatedEmail({
-      organizationName: name, adminFirstName, loginEmail: adminEmail, defaultPassword, loginUrl,
+      org: organization, adminFirstName, loginEmail: adminEmail, defaultPassword, loginUrl,
     });
     await sendMail({ to: adminEmail, subject, html, text });
   } catch (err) {

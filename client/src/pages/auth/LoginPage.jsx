@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '../../layouts/AuthLayout.jsx';
 import { Field } from '../../components/ui/Input.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const { login, completeMfaChallenge } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState('credentials'); // 'credentials' | 'mfa'
   const [mfaToken, setMfaToken] = useState(null);
   const [serverError, setServerError] = useState(null);
@@ -21,7 +22,11 @@ export default function LoginPage() {
   const credentialsForm = useForm({ resolver: zodResolver(loginSchema) });
   const mfaForm = useForm({ resolver: zodResolver(mfaCodeSchema) });
 
-  const redirectTo = location.state?.from ?? '/home';
+  // `?next=/inspections` comes from deep links in emails; only same-site
+  // absolute paths are honored so it can't be used as an open redirect.
+  const next = searchParams.get('next');
+  const safeNext = next && /^\/(?!\/)/.test(next) ? next : null;
+  const redirectTo = location.state?.from ?? safeNext ?? '/home';
 
   const onSubmitCredentials = async ({ email, password }) => {
     setServerError(null);

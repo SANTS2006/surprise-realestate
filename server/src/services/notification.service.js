@@ -7,6 +7,7 @@ import {
 } from '../repositories/notification.repository.js';
 import { findUserById } from '../repositories/user.repository.js';
 import { sendMail } from '../integrations/email/mailer.js';
+import { findOrganizationById } from '../repositories/organization.repository.js';
 import { notificationEmail } from '../integrations/email/templates.js';
 import { logger } from '../config/logger.js';
 
@@ -44,9 +45,9 @@ export async function notify({ organizationId, userId, type, title, message, sen
 
   if (!sendEmail) return;
   try {
-    const user = await findUserById(userId, organizationId);
-    if (!user?.email) return;
-    const { subject, html, text } = notificationEmail({ title, message });
+    const [user, org] = await Promise.all([findUserById(userId, organizationId), findOrganizationById(organizationId)]);
+    if (!user?.email || !org) return;
+    const { subject, html, text } = notificationEmail({ org, title, message });
     await sendMail({ to: user.email, subject, html, text });
   } catch (err) {
     logger.error({ err, userId, type }, 'failed to email notification');

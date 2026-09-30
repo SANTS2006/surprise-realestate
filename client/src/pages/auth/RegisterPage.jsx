@@ -28,7 +28,7 @@ export default function RegisterPage() {
     setServerError(null);
     try {
       await tenantAuthApi.register(orgSlug, body);
-      navigate('/check-email', { state: { email: body.email }, replace: true });
+      navigate(`/${orgSlug}/check-email`, { state: { email: body.email }, replace: true });
     } catch (err) {
       setServerError(err.details?.map((d) => d.message).join(' ') || err.message);
     }

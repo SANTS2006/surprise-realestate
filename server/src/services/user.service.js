@@ -64,7 +64,7 @@ export async function inviteUser({ organizationId, invitedBy, firstName, lastNam
     return { user: created, rawToken: token };
   });
 
-  const { subject, html, text } = inviteEmail(rawToken, { organizationName: invitedBy.organizationName, invitedByName: invitedBy.name });
+  const { subject, html, text } = inviteEmail(rawToken, { org: invitedBy.organization, invitedByName: invitedBy.name });
   await sendMail({ to: user.email, subject, html, text });
 
   await audit({

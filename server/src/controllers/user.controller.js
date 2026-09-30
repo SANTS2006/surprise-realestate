@@ -23,7 +23,7 @@ export const inviteUser = asyncHandler(async (req, res) => {
   const user = await userService.inviteUser(
     {
       organizationId: req.user.organizationId,
-      invitedBy: { id: req.user.id, name: `${actingUser.firstName} ${actingUser.lastName}`, organizationName: organization.name },
+      invitedBy: { id: req.user.id, name: `${actingUser.firstName} ${actingUser.lastName}`, organization },
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       email: req.body.email,

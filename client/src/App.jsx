@@ -8,6 +8,7 @@ import { PlatformAdminProtectedRoute } from './components/auth/PlatformAdminProt
 import { DashboardLayout } from './layouts/DashboardLayout.jsx';
 import { LoadingState } from './components/ui/Spinner.jsx';
 import LandingPage from './pages/LandingPage.jsx';
+import { BareAuthRedirect } from './components/auth/BareAuthRedirect.jsx';
 import LoginPage from './pages/auth/LoginPage.jsx';
 import RegisterPage from './pages/auth/RegisterPage.jsx';
 import CheckEmailPage from './pages/auth/CheckEmailPage.jsx';
@@ -67,6 +68,10 @@ export default function App() {
             <Route path="/:orgSlug/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/:orgSlug/reset-password" element={<ResetPasswordPage />} />
             <Route path="/:orgSlug/set-password" element={<ResetPasswordPage />} />
+
+            {['login', 'register', 'check-email', 'verify-email', 'forgot-password', 'reset-password', 'set-password'].map((path) => (
+              <Route key={path} path={`/${path}`} element={<BareAuthRedirect />} />
+            ))}
 
             {/* Platform console — creates/activates/deactivates tenant
                 organizations. Entirely separate auth from the tenant flows

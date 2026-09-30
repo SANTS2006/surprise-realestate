@@ -13,6 +13,7 @@ import { getCoverImageUrls } from './document.service.js';
 import { audit } from './audit.service.js';
 import { notify } from './notification.service.js';
 import { sendMail } from '../integrations/email/mailer.js';
+import { findOrganizationById } from '../repositories/organization.repository.js';
 import { inspectionScheduledEmail } from '../integrations/email/templates.js';
 import { logger } from '../config/logger.js';
 
@@ -102,7 +103,9 @@ export async function scheduleInspection(organizationId, body, actingUser, req) 
     try {
       const tenant = await findTenantByUnitId(unit.id, organizationId);
       if (tenant?.email) {
+        const org = await findOrganizationById(organizationId);
         const { subject, html, text } = inspectionScheduledEmail({
+          org,
           propertyName: property.name,
           unitLabel: `Unit ${unit.unitNumber}`,
           inspectionType: inspection.type,

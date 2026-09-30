@@ -22,6 +22,7 @@ export async function getMyOrganizationBranding(organizationId) {
 
   return {
     name: organization.name,
+    slug: organization.slug,
     primaryColor: organization.primaryColor,
     secondaryColor: organization.secondaryColor,
     logoUrl,
