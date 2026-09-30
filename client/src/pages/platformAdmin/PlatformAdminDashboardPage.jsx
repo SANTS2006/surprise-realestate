@@ -9,6 +9,7 @@ import { LoadingState } from '../../components/ui/Spinner.jsx';
 import { ThemeToggle } from '../../components/ui/ThemeToggle.jsx';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog.jsx';
 import { usePlatformAdmin } from '../../contexts/PlatformAdminContext.jsx';
+import { useBranding } from '../../contexts/BrandingContext.jsx';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle.js';
 import { platformAdminApi } from '../../api/platformAdmin.js';
 import { CreateOrganizationModal } from './CreateOrganizationModal.jsx';
@@ -16,6 +17,11 @@ import { CreateOrganizationModal } from './CreateOrganizationModal.jsx';
 const APP_ORIGIN = window.location.origin;
 
 export default function PlatformAdminDashboardPage() {
+  const { enterPlatformMode, leavePlatformMode } = useBranding();
+  useEffect(() => {
+    enterPlatformMode();
+    return leavePlatformMode;
+  }, [enterPlatformMode, leavePlatformMode]);
   useDocumentTitle('Organizations — Platform Admin');
   const { admin, logout } = usePlatformAdmin();
   const [organizations, setOrganizations] = useState(null);
@@ -59,7 +65,7 @@ export default function PlatformAdminDashboardPage() {
         <div className="flex items-center gap-3">
           <span className="hidden text-sm text-slate-500 dark:text-slate-400 sm:inline">{admin?.email}</span>
           <ThemeToggle />
-          <Button variant="secondary" size="sm" onClick={logout}>
+          <Button variant="secondary" size="sm" onClick={logout} className="whitespace-nowrap">
             <LogOut size={15} aria-hidden="true" />
             Sign out
           </Button>

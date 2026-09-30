@@ -32,23 +32,43 @@ export function BrandingProvider({ children }) {
     if (branding?.secondaryColor) applyColorRamp('accent', branding.secondaryColor);
   }, []);
 
+  // Platform-admin pages have no tenant context, yet a tenant user may still
+  // be signed in (or a tenant login page visited earlier in this SPA session),
+  // so those pages switch this on while mounted: the platform identity wins
+  // and the inline color overrides are removed so index.css defaults apply.
+  const [platformMode, setPlatformMode] = useState(false);
+  const enterPlatformMode = useCallback(() => setPlatformMode(true), []);
+  const leavePlatformMode = useCallback(() => setPlatformMode(false), []);
+
   useEffect(() => {
     if (!isAuthenticated) {
       setDashboardBranding(null);
       return;
     }
     organizationsApi.getMyBranding()
-      .then((res) => {
-        setDashboardBranding(res.data);
-        applyColorRamp('brand', res.data.primaryColor);
-        applyColorRamp('accent', res.data.secondaryColor);
-      })
+      .then((res) => setDashboardBranding(res.data))
       .catch(() => {});
   }, [isAuthenticated]);
 
-  const branding = dashboardBranding ?? tenantBranding ?? PLATFORM_BRANDING;
+  useEffect(() => {
+    if (platformMode) {
+      for (const prefix of ['brand', 'accent']) {
+        for (const stop of [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]) {
+          document.documentElement.style.removeProperty(`--color-${prefix}-${stop}`);
+        }
+      }
+    } else if (dashboardBranding) {
+      applyColorRamp('brand', dashboardBranding.primaryColor);
+      applyColorRamp('accent', dashboardBranding.secondaryColor);
+    }
+  }, [platformMode, dashboardBranding]);
 
-  const value = useMemo(() => ({ branding, applyTenantBranding }), [branding, applyTenantBranding]);
+  const branding = platformMode ? PLATFORM_BRANDING : (dashboardBranding ?? tenantBranding ?? PLATFORM_BRANDING);
+
+  const value = useMemo(
+    () => ({ branding, applyTenantBranding, enterPlatformMode, leavePlatformMode }),
+    [branding, applyTenantBranding, enterPlatformMode, leavePlatformMode],
+  );
 
   return <BrandingContext.Provider value={value}>{children}</BrandingContext.Provider>;
 }

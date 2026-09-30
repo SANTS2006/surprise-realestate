@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button.jsx';
 import { Alert } from '../../components/ui/Alert.jsx';
 import { ThemeToggle } from '../../components/ui/ThemeToggle.jsx';
 import { usePlatformAdmin } from '../../contexts/PlatformAdminContext.jsx';
+import { useBranding } from '../../contexts/BrandingContext.jsx';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle.js';
 
 const schema = z.object({
@@ -17,6 +18,11 @@ const schema = z.object({
 });
 
 export default function PlatformAdminLoginPage() {
+  const { enterPlatformMode, leavePlatformMode } = useBranding();
+  useEffect(() => {
+    enterPlatformMode();
+    return leavePlatformMode;
+  }, [enterPlatformMode, leavePlatformMode]);
   useDocumentTitle('Platform Admin');
   const { login } = usePlatformAdmin();
   const navigate = useNavigate();
