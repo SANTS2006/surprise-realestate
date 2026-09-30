@@ -12,10 +12,10 @@ export const authenticatePlatformAdmin = asyncHandler(async (req, res, next) => 
   if (!req.session?.platformAdminId) throw AppError.unauthorized();
 
   const admin = await findPlatformAdminById(req.session.platformAdminId);
-  if (!admin) {
+  if (!admin || !admin.isActive) {
     return req.session.destroy(() => next(AppError.unauthorized('Your session is no longer valid. Please sign in again.')));
   }
 
-  req.platformAdmin = { id: admin.id, email: admin.email };
+  req.platformAdmin = { id: admin.id, email: admin.email, firstName: admin.firstName, lastName: admin.lastName };
   next();
 });

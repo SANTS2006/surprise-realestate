@@ -35,3 +35,54 @@ export const organizationStatusSchema = z.object({
 export const orgSlugParamSchema = z.object({
   params: z.object({ orgSlug: z.string().trim().min(1).max(50) }),
 });
+
+const password = z.string().min(1).max(128);
+const uuidParam = z.object({ id: z.string().uuid() });
+
+export const platformForgotPasswordSchema = z.object({ body: z.object({ email }).strict() });
+
+export const platformResetPasswordSchema = z.object({
+  body: z.object({ token: z.string().min(10).max(200), password }).strict(),
+});
+
+export const platformChangePasswordSchema = z.object({
+  body: z.object({ currentPassword: password, newPassword: password }).strict(),
+});
+
+export const platformProfileSchema = z.object({
+  body: z.object({
+    firstName: z.string().trim().min(1).max(100),
+    lastName: z.string().trim().min(1).max(100),
+  }).strict(),
+});
+
+export const createPlatformAdminSchema = z.object({
+  body: z.object({
+    firstName: z.string().trim().min(1).max(100),
+    lastName: z.string().trim().min(1).max(100),
+    email,
+  }).strict(),
+});
+
+export const platformAdminStatusSchema = z.object({
+  params: uuidParam,
+  body: z.object({ isActive: z.boolean() }).strict(),
+});
+
+export const organizationIdParamSchema = z.object({ params: uuidParam });
+
+export const updateOrganizationSchema = z.object({
+  params: uuidParam,
+  body: z.object({
+    name: z.string().trim().min(2).max(150).optional(),
+    email: email.optional(),
+    phone: z.string().trim().max(40).nullable().optional(),
+    primaryColor: hexColor.optional(),
+    secondaryColor: hexColor.optional(),
+  }).strict(),
+});
+
+export const sendAdminResetSchema = z.object({
+  params: uuidParam,
+  body: z.object({ userId: z.string().uuid() }).strict(),
+});

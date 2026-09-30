@@ -13,9 +13,12 @@ import {
 } from '../repositories/platformAdmin.repository.js';
 import {
   createOrganization, findOrganizationBySlug, findAllOrganizations, updateOrganization, updateOrganizationStatus,
-  findOrganizationById,
+  findOrganizationById, findOrganizationDetail, getPlatformOverviewCounts,
 } from '../repositories/organization.repository.js';
-import { findUserByEmailGlobal, createUser } from '../repositories/user.repository.js';
+import { findUserByEmailGlobal, createUser, findUserById } from '../repositories/user.repository.js';
+import { generateRawToken } from '../auth/crypto.js';
+import { createPasswordResetToken, invalidateOutstandingResetTokens } from '../repositories/passwordResetToken.repository.js';
+import { passwordResetEmail } from '../integrations/email/templates.js';
 import { findRoleByName, assignRoleToUser } from '../repositories/role.repository.js';
 import { bootstrapDefaultRoles } from './role.service.js';
 import { generateUniqueReferralCode } from '../utils/referralCode.js';
@@ -47,6 +50,11 @@ export async function loginPlatformAdmin({ email, password }, req) {
     const shouldLock = attempts >= MAX_FAILED_LOGIN_ATTEMPTS;
     await recordPlatformAdminFailedLogin(admin.id, { lock: shouldLock, lockedUntil: shouldLock ? new Date(Date.now() + LOCKOUT_DURATION_MS) : undefined });
     throw AppError.unauthorized(INVALID_CREDENTIALS_MESSAGE);
+  }
+
+  // Only someone holding the right password learns the account is deactivated.
+  if (!admin.isActive) {
+    throw AppError.forbidden('This platform admin account has been deactivated.');
   }
 
   await resetPlatformAdminFailedLogins(admin.id);
@@ -85,9 +93,71 @@ function serializeOrganizationForPlatformAdmin(org) {
     status: org.status,
     primaryColor: org.primaryColor,
     secondaryColor: org.secondaryColor,
+    phone: org.phone ?? null,
     hasLogo: Boolean(org.logoDocumentId),
+    userCount: org._count?.users ?? null,
+    propertyCount: org._count?.properties ?? null,
     createdAt: org.createdAt,
   };
+}
+
+export async function getOverviewForPlatformAdmin() {
+  const counts = await getPlatformOverviewCounts();
+  return {
+    organizations: { total: counts.total, active: counts.active, suspended: counts.total - counts.active },
+    users: counts.users,
+    properties: counts.properties,
+    recentOrganizations: counts.recent.map(serializeOrganizationForPlatformAdmin),
+  };
+}
+
+export async function getOrganizationDetailForPlatformAdmin(id) {
+  const detail = await findOrganizationDetail(id);
+  if (!detail) throw AppError.notFound('Organization not found.');
+  const { organization, administrators } = detail;
+  return {
+    ...serializeOrganizationForPlatformAdmin(organization),
+    tenantCount: organization._count.tenants,
+    administrators,
+  };
+}
+
+// The URL name (slug) is deliberately not editable — it's baked into every
+// link the organization's users have bookmarked or been emailed.
+export async function updateOrganizationByPlatformAdmin(id, body) {
+  const organization = await findOrganizationById(id);
+  if (!organization) throw AppError.notFound('Organization not found.');
+
+  const data = {};
+  for (const key of ['name', 'email', 'phone', 'primaryColor', 'secondaryColor']) {
+    if (body[key] !== undefined) data[key] = body[key];
+  }
+  if (Object.keys(data).length === 0) throw AppError.badRequest('Nothing to update.');
+
+  const updated = await updateOrganization(id, data);
+  logger.info({ organizationId: id, fields: Object.keys(data) }, 'organization updated by platform admin');
+  return serializeOrganizationForPlatformAdmin(updated);
+}
+
+// Emails one of the organization's own administrators a password reset link
+// on the organization's own branded, slug-scoped page — for when they're
+// locked out and have lost their way in. The platform admin never sees or
+// sets the password itself.
+export async function sendOrganizationAdminPasswordReset(organizationId, userId) {
+  const organization = await findOrganizationById(organizationId);
+  if (!organization) throw AppError.notFound('Organization not found.');
+
+  const user = await findUserById(userId, organizationId);
+  if (!user) throw AppError.notFound('User not found in this organization.');
+
+  await invalidateOutstandingResetTokens(user.id);
+  const rawToken = generateRawToken();
+  await createPasswordResetToken(user.id, rawToken, new Date(Date.now() + 15 * 60 * 1000));
+  const { subject, html, text } = passwordResetEmail(rawToken, organization);
+  await sendMail({ to: user.email, subject, html, text });
+
+  logger.info({ organizationId, userId }, 'password reset link sent to organization user by platform admin');
+  return { sentTo: user.email };
 }
 
 // Creates a tenant organization end-to-end: the org row, its full default

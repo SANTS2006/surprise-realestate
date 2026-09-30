@@ -318,3 +318,50 @@ export function generalContactEmail({ org, firstName, lastName, email, phone, me
     }),
   };
 }
+
+// ── Platform admin emails ───────────────────────────────────────────────
+// Sent on behalf of the platform itself (no organization), so they carry the
+// NTS Real Estate System identity and link to the platform admin console.
+
+export function platformAdminResetEmail(token) {
+  const url = `${env.CLIENT_URL}/platform-admin/reset-password?token=${token}`;
+  const now = new Date();
+  const expires = new Date(now.getTime() + 15 * 60 * 1000);
+  return {
+    subject: `Reset your ${PLATFORM_NAME} platform admin password`,
+    text: `Reset your platform admin password: ${url} (expires in 15 minutes)`,
+    html: renderEmail({
+      headerLabel: 'Password Reset',
+      eyebrow: 'Security alert',
+      heading: 'Reset your password',
+      paragraphs: [`We received a request to reset the password for your ${PLATFORM_NAME} platform admin account.`],
+      detailsRows: [
+        { label: 'Requested at', value: dateTimeFmt.format(now) },
+        { label: 'Expires at', value: dateTimeFmt.format(expires), valueColor: '#DC2626' },
+      ],
+      cta: { icon: '🔒', heading: 'Secure your account', description: 'This password reset link is valid for 15 minutes only.', href: url, buttonText: 'Reset Password' },
+      disclaimer: "For your security, never share this reset link with anyone. If you didn't request this, you can safely ignore this email.",
+    }),
+  };
+}
+
+export function platformAdminInviteEmail(token, { invitedByName }) {
+  const url = `${env.CLIENT_URL}/platform-admin/reset-password?token=${token}`;
+  const inviter = escapeHtml(invitedByName);
+  return {
+    subject: `You've been added as a ${PLATFORM_NAME} platform admin`,
+    text: `${invitedByName} added you as a platform admin. Set your password: ${url} (expires in 7 days)`,
+    html: renderEmail({
+      headerLabel: 'Invitation',
+      eyebrow: "You're invited",
+      heading: 'Join the platform team',
+      paragraphs: [`<strong>${inviter}</strong> added you as a platform administrator on ${PLATFORM_NAME}. You'll be able to create and manage the real estate companies on the platform.`],
+      detailsRows: [
+        { label: 'Invited by', value: inviter },
+        { label: 'Link expires', value: '7 days from now', valueColor: '#DC2626' },
+      ],
+      cta: { icon: '🔑', heading: 'Set your password', description: 'Choose a password to activate your account.', href: url, buttonText: 'Accept Invitation' },
+      disclaimer: "If you weren't expecting this invitation, you can safely ignore this email.",
+    }),
+  };
+}

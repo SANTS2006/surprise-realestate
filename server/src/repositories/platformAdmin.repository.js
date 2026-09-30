@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { hashToken } from '../auth/crypto.js';
 
 // PlatformAdmin has no organizationId — it is deliberately outside the
 // tenant-scoping convention used everywhere else in repositories/. Every
@@ -31,4 +32,48 @@ export function resetPlatformAdminFailedLogins(id) {
     where: { id },
     data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date() },
   });
+}
+
+export function findAllPlatformAdmins() {
+  return prisma.platformAdmin.findMany({ orderBy: { createdAt: 'asc' } });
+}
+
+export function countActivePlatformAdmins() {
+  return prisma.platformAdmin.count({ where: { isActive: true } });
+}
+
+export function updatePlatformAdmin(id, data) {
+  return prisma.platformAdmin.update({ where: { id }, data });
+}
+
+export function setPlatformAdminPassword(id, passwordHash) {
+  return prisma.platformAdmin.update({
+    where: { id },
+    data: { passwordHash, failedLoginAttempts: 0, lockedUntil: null },
+  });
+}
+
+// ── Password reset / invite tokens ──────────────────────────────────────
+
+export function createPlatformAdminResetToken(platformAdminId, rawToken, expiresAt) {
+  return prisma.platformAdminPasswordResetToken.create({
+    data: { platformAdminId, tokenHash: hashToken(rawToken), expiresAt },
+  });
+}
+
+export function findValidPlatformAdminResetToken(rawToken) {
+  return prisma.platformAdminPasswordResetToken.findFirst({
+    where: { tokenHash: hashToken(rawToken), usedAt: null, expiresAt: { gt: new Date() } },
+  });
+}
+
+export function invalidatePlatformAdminResetTokens(platformAdminId) {
+  return prisma.platformAdminPasswordResetToken.updateMany({
+    where: { platformAdminId, usedAt: null },
+    data: { usedAt: new Date() },
+  });
+}
+
+export function markPlatformAdminResetTokenUsed(id) {
+  return prisma.platformAdminPasswordResetToken.update({ where: { id }, data: { usedAt: new Date() } });
 }

@@ -32,7 +32,43 @@ export function findOrganizationBySlugExcludingId(slug, excludeId) {
 // Platform-admin only — every tenant, unfiltered. Never call this from a
 // tenant-scoped code path.
 export function findAllOrganizations() {
-  return prisma.organization.findMany({ orderBy: { createdAt: 'desc' } });
+  return prisma.organization.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { _count: { select: { users: true, properties: true } } },
+  });
+}
+
+// Platform-wide aggregate counts for the console overview.
+export async function getPlatformOverviewCounts() {
+  const [total, active, users, properties, recent] = await Promise.all([
+    prisma.organization.count(),
+    prisma.organization.count({ where: { status: 'active' } }),
+    prisma.user.count(),
+    prisma.property.count(),
+    prisma.organization.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      include: { _count: { select: { users: true } } },
+    }),
+  ]);
+  return { total, active, users, properties, recent };
+}
+
+// Everything the platform admin's organization detail view needs: counts
+// plus the people holding the `administrator` role — who a platform admin
+// would contact (or send a password reset to).
+export async function findOrganizationDetail(id) {
+  const organization = await prisma.organization.findUnique({
+    where: { id },
+    include: { _count: { select: { users: true, properties: true, tenants: true } } },
+  });
+  if (!organization) return null;
+  const administrators = await prisma.user.findMany({
+    where: { organizationId: id, userRoles: { some: { role: { name: 'administrator' } } } },
+    select: { id: true, firstName: true, lastName: true, email: true, status: true, lastLoginAt: true },
+    orderBy: { createdAt: 'asc' },
+  });
+  return { organization, administrators };
 }
 
 export function updateOrganizationStatus(id, status) {
