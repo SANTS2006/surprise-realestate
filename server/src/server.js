@@ -4,6 +4,7 @@ import { logger } from './config/logger.js';
 import { disconnectDatabase } from './config/database.js';
 import { closeSessionStore } from './config/session.js';
 import { ensurePermissionCatalogSeeded } from './services/permission.service.js';
+import { initRealtime } from './realtime/socket.js';
 
 const app = createApp();
 
@@ -13,6 +14,7 @@ ensurePermissionCatalogSeeded()
     server = app.listen(env.PORT, () => {
       logger.info(`Surprise Real Estate API listening on port ${env.PORT} [${env.NODE_ENV}]`);
     });
+    initRealtime(server);
   })
   .catch((err) => {
     logger.error({ err }, 'Failed to seed permission catalog — refusing to start');

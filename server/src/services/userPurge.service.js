@@ -85,6 +85,11 @@ export async function purgeUser(targetUserId, organizationId, actingUser, req) {
       await tx.owner.delete({ where: { id: ownerId } }); // properties.ownerId -> null
     }
 
+    // Their private conversations go with them (the other person's copy too —
+    // a conversation with someone who never existed cannot remain). Messages,
+    // keys and files they sent cascade from the user row itself.
+    await tx.chatRoom.deleteMany({ where: { type: 'direct', members: { some: { userId: targetUserId } } } });
+
     await tx.auditLog.deleteMany({
       where: { OR: [{ userId: targetUserId }, { entityType: 'user', entityId: targetUserId }] },
     });

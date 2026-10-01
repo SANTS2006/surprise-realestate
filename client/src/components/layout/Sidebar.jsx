@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { NAV_SECTIONS, isNavItemVisible } from '../../config/navigation.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useBranding } from '../../contexts/BrandingContext.jsx';
+import { useOptionalChat } from '../../contexts/ChatContext.jsx';
 import { Logo } from '../ui/Logo.jsx';
 
 function NavItemLink({ to, children, onNavigate }) {
@@ -86,6 +87,8 @@ function BrandHeader({ onClose }) {
 
 export function Sidebar({ mobileOpen, onClose }) {
   const { user } = useAuth();
+  const chat = useOptionalChat();
+  const unreadChat = chat?.totalUnread ?? 0;
   const roles = user?.roles ?? [];
   const visibleSections = NAV_SECTIONS.filter((item) => isNavItemVisible(item, roles));
 
@@ -99,6 +102,9 @@ export function Sidebar({ mobileOpen, onClose }) {
             <span className="flex items-center gap-2.5">
               <item.icon size={17} aria-hidden="true" />
               {item.label}
+              {item.to === '/chat' && unreadChat > 0 && (
+                <span className="ml-auto rounded-full bg-brand-600 px-1.5 py-0.5 text-[10px] font-semibold text-white" aria-label={`${unreadChat} unread`}>{unreadChat > 99 ? '99+' : unreadChat}</span>
+              )}
             </span>
           </NavItemLink>
         )

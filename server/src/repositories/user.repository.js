@@ -92,7 +92,7 @@ export function countUsersByOrganization(organizationId, { search, status }) {
 // row). Every other repository function in the codebase must not follow
 // this pattern.
 export function findUserByIdUnscoped(id) {
-  return prisma.user.findUnique({ where: { id } });
+  return prisma.user.findUnique({ where: { id }, include: { organization: { select: { status: true } } } });
 }
 
 export function recordFailedLogin(id, { lock, lockedUntil }) {

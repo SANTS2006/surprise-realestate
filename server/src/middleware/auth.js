@@ -34,6 +34,10 @@ export const authenticate = asyncHandler(async (req, res, next) => {
       return req.session.destroy(() => next(AppError.unauthorized('Your session is no longer valid. Please sign in again.')));
     }
 
+    if (user.organization && user.organization.status !== 'active') {
+      return req.session.destroy(() => next(AppError.forbidden('This company has been deactivated and all access has been revoked. Please contact the platform administrator.')));
+    }
+
     req.user = { id: user.id, organizationId: user.organizationId, roles: await loadRoleNames(user.id), authMethod: 'session' };
     return next();
   }

@@ -51,6 +51,8 @@ const ReportsPage = lazy(() => import('./pages/reports/ReportsPage.jsx'));
 const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage.jsx'));
 const AuditLogsPage = lazy(() => import('./pages/audit/AuditLogsPage.jsx'));
 const ReferralsPage = lazy(() => import('./pages/referrals/ReferralsPage.jsx'));
+const ChatPage = lazy(() => import('./pages/chat/ChatPage.jsx'));
+const PlatformAdminSupportPage = lazy(() => import('./pages/platformAdmin/PlatformAdminSupportPage.jsx'));
 const AgentsPage = lazy(() => import('./pages/agents/AgentsPage.jsx'));
 const MyRentalsPage = lazy(() => import('./pages/tenants/MyRentalsPage.jsx'));
 const PlatformAdminOverviewPage = lazy(() => import('./pages/platformAdmin/PlatformAdminOverviewPage.jsx'));
@@ -95,6 +97,7 @@ export default function App() {
                 <Route path="/platform-admin" element={<Suspense fallback={<LoadingState />}><PlatformAdminOverviewPage /></Suspense>} />
                 <Route path="/platform-admin/organizations" element={<Suspense fallback={<LoadingState />}><PlatformAdminOrganizationsPage /></Suspense>} />
                 <Route path="/platform-admin/administrators" element={<Suspense fallback={<LoadingState />}><PlatformAdminAdministratorsPage /></Suspense>} />
+                <Route path="/platform-admin/support" element={<Suspense fallback={<LoadingState />}><PlatformAdminSupportPage /></Suspense>} />
                 <Route path="/platform-admin/audit-log" element={<Suspense fallback={<LoadingState />}><PlatformAdminAuditLogPage /></Suspense>} />
                 <Route path="/platform-admin/account" element={<Suspense fallback={<LoadingState />}><PlatformAdminAccountPage /></Suspense>} />
               </Route>
@@ -111,6 +114,7 @@ export default function App() {
                 <Route path="/dashboard" element={<Suspense fallback={<LoadingState />}><DashboardPage /></Suspense>} />
                 <Route path="/properties" element={<Suspense fallback={<LoadingState />}><PropertiesListPage /></Suspense>} />
                 <Route path="/properties/:id" element={<Suspense fallback={<LoadingState />}><PropertyDetailPage /></Suspense>} />
+                <Route path="/chat" element={<Suspense fallback={<LoadingState />}><ChatPage /></Suspense>} />
                 <Route path="/agents" element={<Suspense fallback={<LoadingState />}><AgentsPage /></Suspense>} />
                 <Route path="/my-rentals" element={<Suspense fallback={<LoadingState />}><MyRentalsPage /></Suspense>} />
                 <Route path="/tenants" element={<Suspense fallback={<LoadingState />}><TenantsListPage /></Suspense>} />

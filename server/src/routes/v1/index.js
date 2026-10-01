@@ -27,6 +27,7 @@ import { auditRemarksRouter } from './auditRemarks.routes.js';
 import { tenantMessagesRouter } from './tenantMessages.routes.js';
 import { rentalsRouter } from './rentals.routes.js';
 import { agentsRouter } from './agents.routes.js';
+import { chatRouter } from './chat.routes.js';
 import { referralsRouter } from './referrals.routes.js';
 import { publicRouter } from './public.routes.js';
 import { platformAdminRouter } from './platformAdmin.routes.js';
@@ -50,6 +51,9 @@ v1Router.use('/public', publicRouter);
 // unitsRouter/generateInvoiceRouter below would still swallow them first
 // if registered after those.
 v1Router.use('/platform-admin', platformAdminRouter);
+// Before any router mounted at '/' (they apply tenant-only authentication to
+// everything that follows them) — chat serves platform admins as well.
+v1Router.use('/chat', chatRouter);
 v1Router.use('/orgs/:orgSlug', tenantAuthRouter);
 v1Router.use('/auth', authRouter);
 v1Router.use('/users', usersRouter);

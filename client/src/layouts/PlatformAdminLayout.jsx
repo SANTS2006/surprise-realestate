@@ -1,16 +1,18 @@
 import { useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { ShieldCheck, LogOut, LayoutDashboard, Building2, Users, UserCog, ScrollText } from 'lucide-react';
+import { ShieldCheck, LogOut, LayoutDashboard, Building2, Users, UserCog, ScrollText, MessagesSquare } from 'lucide-react';
 import clsx from 'clsx';
 import { Button } from '../components/ui/Button.jsx';
 import { ThemeToggle } from '../components/ui/ThemeToggle.jsx';
 import { usePlatformAdmin } from '../contexts/PlatformAdminContext.jsx';
 import { useBranding } from '../contexts/BrandingContext.jsx';
+import { ChatProvider, useOptionalChat } from '../contexts/ChatContext.jsx';
 
 const NAV = [
   { to: '/platform-admin', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/platform-admin/organizations', label: 'Organizations', icon: Building2 },
   { to: '/platform-admin/administrators', label: 'Administrators', icon: Users },
+  { to: '/platform-admin/support', label: 'Support chat', icon: MessagesSquare },
   { to: '/platform-admin/audit-log', label: 'Audit log', icon: ScrollText },
   { to: '/platform-admin/account', label: 'My account', icon: UserCog },
 ];
@@ -19,6 +21,17 @@ const NAV = [
 // the page itself. Pins the platform identity so a tenant's branding can
 // never show through while it is mounted.
 export default function PlatformAdminLayout() {
+  const { admin } = usePlatformAdmin();
+  if (!admin) return null;
+  return (
+    <ChatProvider actor={{ kind: 'platform', id: admin.id }}>
+      <PlatformShell />
+    </ChatProvider>
+  );
+}
+
+function PlatformShell() {
+  const chat = useOptionalChat();
   const { enterPlatformMode, leavePlatformMode } = useBranding();
   useEffect(() => {
     enterPlatformMode();
@@ -41,7 +54,7 @@ export default function PlatformAdminLayout() {
         <div className="flex items-center gap-3">
           <span className="hidden text-sm text-slate-500 dark:text-slate-400 sm:inline">{admin?.email}</span>
           <ThemeToggle />
-          <Button variant="secondary" size="sm" onClick={logout} className="whitespace-nowrap">
+          <Button variant="secondary" size="sm" onClick={async () => { await chat?.lockChat(); await logout(); }} className="whitespace-nowrap">
             <LogOut size={15} aria-hidden="true" />
             Sign out
           </Button>
@@ -64,6 +77,9 @@ export default function PlatformAdminLayout() {
               >
                 <Icon size={15} aria-hidden="true" />
                 {label}
+                {to.endsWith('/support') && (chat?.totalUnread ?? 0) > 0 && (
+                  <span className="rounded-full bg-brand-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">{chat.totalUnread}</span>
+                )}
               </NavLink>
             </li>
           ))}

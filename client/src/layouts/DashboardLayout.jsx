@@ -3,16 +3,21 @@ import { Outlet, useLocation, matchPath } from 'react-router-dom';
 import { Sidebar } from '../components/layout/Sidebar.jsx';
 import { Topbar } from '../components/layout/Topbar.jsx';
 import { Footer } from '../components/layout/Footer.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { ChatProvider } from '../contexts/ChatContext.jsx';
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js';
 import { PAGE_TITLES } from '../config/pageTitles.js';
 
+const CHAT_ROLES = ['tenant', 'owner', 'agent', 'administrator'];
+
 export function DashboardLayout() {
+  const { user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const pageTitle = PAGE_TITLES.find((p) => matchPath(p.path, location.pathname))?.title;
   useDocumentTitle(pageTitle);
 
-  return (
+  const shell = (
     <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-brand-50/50 to-accent-50/40 dark:from-slate-950 dark:via-brand-950/50 dark:to-slate-900">
       <a
         href="#main-content"
@@ -30,4 +35,9 @@ export function DashboardLayout() {
       </div>
     </div>
   );
+
+  // Chat (and its encryption keys, socket and incoming-call handling) only
+  // exists for the roles that can use it.
+  const chatUser = user?.roles?.some((r) => CHAT_ROLES.includes(r));
+  return chatUser ? <ChatProvider actor={{ kind: 'user', id: user.id }}>{shell}</ChatProvider> : shell;
 }

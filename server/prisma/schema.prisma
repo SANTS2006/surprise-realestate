@@ -222,6 +222,7 @@ model Organization {
 
   users               User[]
   tenantRentals       TenantRental[]
+  chatRooms           ChatRoom[]
   ownerAgents         OwnerAgent[]
   roles               Role[]
   properties          Property[]
@@ -298,6 +299,10 @@ model User {
   referralsMade            Referral[]               @relation("ReferralsMade")
   referredBy               Referral?                @relation("ReferralsReceived")
   ownerLinks               OwnerAgent[]
+  chatKey                  ChatKey?
+  chatMemberships          ChatMember[]
+  chatMessagesSent         ChatMessage[]
+  chatAttachments          ChatAttachment[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -988,6 +993,10 @@ model PlatformAdmin {
   updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz
 
   passwordResetTokens PlatformAdminPasswordResetToken[]
+  chatKey             ChatKey?
+  chatMemberships     ChatMember[]
+  chatMessagesSent    ChatMessage[]
+  chatAttachments     ChatAttachment[]
 
   @@map("platform_admins")
 }
@@ -1093,4 +1102,130 @@ model OwnerAgent {
   @@index([organizationId])
   @@index([agentUserId])
   @@map("owner_agents")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CHAT (end-to-end encrypted)
+//
+// The server only ever stores ciphertext. Each person has an ECDH key pair
+// made in their browser; the private half is stored here ONLY encrypted with
+// a key derived from a chat passphrase the server never sees. Every room has
+// one AES-256-GCM room key, generated in a member's browser and stored here
+// only "wrapped" (encrypted) separately for each member's public key.
+// Messages and files are encrypted with that key before they leave the
+// browser. Anyone who is not a member of a room is never sent its wrapped
+// key, messages or files.
+// ─────────────────────────────────────────────────────────────────────────
+
+enum ChatRoomType {
+  community_tenants
+  community_staff
+  community_all
+  direct
+  support
+}
+
+// A person's chat identity: the public key others encrypt to, plus the
+// passphrase-encrypted private key (so a new device can restore it).
+// Exactly one of userId / platformAdminId is set.
+model ChatKey {
+  id                  String         @id @default(uuid()) @db.Uuid
+  userId              String?        @unique @map("user_id") @db.Uuid
+  platformAdminId     String?        @unique @map("platform_admin_id") @db.Uuid
+  publicKey           String         @map("public_key")
+  encryptedPrivateKey String         @map("encrypted_private_key")
+  keySalt             String         @map("key_salt")
+  keyIv               String         @map("key_iv")
+  kdfIterations       Int            @default(250000) @map("kdf_iterations")
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platformAdmin PlatformAdmin? @relation(fields: [platformAdminId], references: [id], onDelete: Cascade)
+
+  @@map("chat_keys")
+}
+
+model ChatRoom {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String?      @map("organization_id") @db.Uuid
+  type           ChatRoomType
+  name           String?
+  // Makes "get or create" idempotent: one tenants community per organization,
+  // one direct room per pair of people, one support room per organization.
+  dedupeKey      String       @unique @map("dedupe_key")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  organization Organization?    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members      ChatMember[]
+  messages     ChatMessage[]
+  attachments  ChatAttachment[]
+
+  @@index([organizationId])
+  @@map("chat_rooms")
+}
+
+model ChatMember {
+  id               String    @id @default(uuid()) @db.Uuid
+  roomId           String    @map("room_id") @db.Uuid
+  userId           String?   @map("user_id") @db.Uuid
+  platformAdminId  String?   @map("platform_admin_id") @db.Uuid
+  // The room key, wrapped (encrypted) for this member by another member's
+  // browser; null until a member who holds the key has distributed it.
+  wrappedKey       String?   @map("wrapped_key")
+  wrapIv           String?   @map("wrap_iv")
+  wrapperPublicKey String?   @map("wrapper_public_key")
+  joinedAt         DateTime  @default(now()) @map("joined_at") @db.Timestamptz
+  lastReadAt       DateTime? @map("last_read_at") @db.Timestamptz
+
+  room          ChatRoom       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platformAdmin PlatformAdmin? @relation(fields: [platformAdminId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@unique([roomId, platformAdminId])
+  @@index([userId])
+  @@index([platformAdminId])
+  @@map("chat_members")
+}
+
+model ChatMessage {
+  id                    String   @id @default(uuid()) @db.Uuid
+  roomId                String   @map("room_id") @db.Uuid
+  senderUserId          String?  @map("sender_user_id") @db.Uuid
+  senderPlatformAdminId String?  @map("sender_platform_admin_id") @db.Uuid
+  // AES-GCM ciphertext (base64) of a JSON payload (text, or a file's key and
+  // metadata) and its IV — opaque to the server.
+  ciphertext            String
+  iv                    String
+  attachmentId          String?  @unique @map("attachment_id") @db.Uuid
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  room                ChatRoom        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderUser          User?           @relation(fields: [senderUserId], references: [id], onDelete: Cascade)
+  senderPlatformAdmin PlatformAdmin?  @relation(fields: [senderPlatformAdminId], references: [id], onDelete: Cascade)
+  attachment          ChatAttachment? @relation(fields: [attachmentId], references: [id], onDelete: SetNull)
+
+  @@index([roomId, createdAt])
+  @@map("chat_messages")
+}
+
+// An encrypted file (picture, video, voice message): the bytes here are
+// ciphertext; the key to open them travels inside the encrypted message.
+model ChatAttachment {
+  id                     String   @id @default(uuid()) @db.Uuid
+  roomId                 String   @map("room_id") @db.Uuid
+  uploaderUserId         String?  @map("uploader_user_id") @db.Uuid
+  uploaderPlatformAdminId String? @map("uploader_platform_admin_id") @db.Uuid
+  data                   Bytes
+  size                   Int
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  room                  ChatRoom       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  uploaderUser          User?          @relation(fields: [uploaderUserId], references: [id], onDelete: Cascade)
+  uploaderPlatformAdmin PlatformAdmin? @relation(fields: [uploaderPlatformAdminId], references: [id], onDelete: Cascade)
+  message               ChatMessage?
+
+  @@index([roomId])
+  @@map("chat_attachments")
 }

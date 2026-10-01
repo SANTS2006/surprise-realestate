@@ -20,6 +20,10 @@ const envSchema = z.object({
   // Legacy: only used by the un-slugged /public/* routes. The listings site now
   // addresses its company by URL name (/public/orgs/:orgSlug/*), which needs
   // no configuration at all.
+  // Optional TURN relay so voice/video calls work across strict firewalls.
+  TURN_URLS: z.string().optional(),
+  TURN_USERNAME: z.string().optional(),
+  TURN_CREDENTIAL: z.string().optional(),
   PRIMARY_ORGANIZATION_ID: z.string().uuid('PRIMARY_ORGANIZATION_ID must be the UUID of an organization').optional(),
 
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),

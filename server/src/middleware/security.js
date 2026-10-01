@@ -14,8 +14,10 @@ export const helmetMiddleware = helmet({
           // generateSignedAccessUrl) come from Cloudinary's *api* subdomain
           // (`/v1_1/.../image/download?...`), not the `res.cloudinary.com`
           // CDN used for public assets — both need to be allowed.
-          imgSrc: ["'self'", 'data:', 'res.cloudinary.com', 'api.cloudinary.com'],
-          connectSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'blob:', 'res.cloudinary.com', 'api.cloudinary.com'],
+          // Decrypted chat pictures, video and voice messages play from blob: URLs.
+          mediaSrc: ["'self'", 'blob:'],
+          connectSrc: ["'self'", 'wss:'],
           scriptSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
           objectSrc: ["'none'"],
@@ -51,7 +53,10 @@ export function requestIdMiddleware(req, res, next) {
 
 // General API rate limit — applied globally, on top of stricter per-route
 // limits for auth-sensitive endpoints (see auth routes).
+// Chat has its own, more generous limit (a conversation is many small
+// requests) — see chatRateLimiter below; the general limiter skips it.
 export const generalRateLimiter = rateLimit({
+  skip: (req) => req.originalUrl.startsWith('/api/v1/chat'),
   windowMs: env.RATE_LIMIT_WINDOW_MINUTES * 60 * 1000,
   max: env.RATE_LIMIT_MAX_REQUESTS,
   standardHeaders: true,
@@ -90,3 +95,12 @@ export function originCheckMiddleware(req, res, next) {
   }
   next();
 }
+
+export const chatRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 240,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `${req.chatActor?.kind ?? 'x'}:${req.chatActor?.id ?? req.ip}`,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'You are sending too fast. Please slow down.' } },
+});

@@ -6,6 +6,7 @@ import { UserAvatar } from '../ui/UserAvatar.jsx';
 import { Logo } from '../ui/Logo.jsx';
 import { Button } from '../ui/Button.jsx';
 import { useAuth, getLoginPath } from '../../contexts/AuthContext.jsx';
+import { useOptionalChat } from '../../contexts/ChatContext.jsx';
 import { notificationsApi } from '../../api/notifications.js';
 
 function useOutsideClick(ref, onOutside) {
@@ -21,6 +22,7 @@ function useOutsideClick(ref, onOutside) {
 export function Topbar({ onMenuClick }) {
   const { user, logout, avatarVersion } = useAuth();
   const navigate = useNavigate();
+  const chat = useOptionalChat();
   const [menuOpen, setMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -38,6 +40,7 @@ export function Topbar({ onMenuClick }) {
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
+      await chat?.lockChat();
       await logout();
       navigate(getLoginPath(), { replace: true });
     } catch {
