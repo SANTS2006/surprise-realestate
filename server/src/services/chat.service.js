@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import { emitToRoom, joinActorToRoom, leaveActorFromRoom, emitToActor } from '../realtime/hub.js';
@@ -86,13 +87,27 @@ async function getOrCreateRoom({ organizationId, type, dedupeKey, name = null })
   });
 }
 
+// Keeping memberships in step costs several queries, and the room list is
+// fetched on every incoming message — so each person is re-synced at most
+// once a minute (rooms are also re-synced whenever one is opened).
+const lastEnsured = new Map();
+const ENSURE_EVERY_MS = 60_000;
+
 async function ensureRoomsFor(actor) {
+  const key = actorRef(actor);
+  const last = lastEnsured.get(key);
+  if (last && Date.now() - last < ENSURE_EVERY_MS) return;
+  lastEnsured.set(key, Date.now());
+  await ensureRoomsForUncached(actor);
+}
+
+async function ensureRoomsForUncached(actor) {
   if (actor.kind === 'platform') {
     const orgs = await prisma.organization.findMany({ where: { status: 'active' }, select: { id: true } });
-    for (const org of orgs) {
+    await Promise.all(orgs.map(async (org) => {
       const room = await getOrCreateRoom({ organizationId: org.id, type: 'support', dedupeKey: `${org.id}:support` });
       await syncRoomMembers(room);
-    }
+    }));
     return;
   }
 
@@ -101,10 +116,10 @@ async function ensureRoomsFor(actor) {
   if (actor.roles.includes('owner') || actor.roles.includes('agent')) types.push('community_staff', 'community_all');
   if (isOrgAdmin(actor)) types.push('support');
 
-  for (const type of new Set(types)) {
+  await Promise.all([...new Set(types)].map(async (type) => {
     const room = await getOrCreateRoom({ organizationId: actor.organizationId, type, dedupeKey: `${actor.organizationId}:${type}` });
     await syncRoomMembers(room);
-  }
+  }));
 }
 
 // ── reading ─────────────────────────────────────────────────────────────
@@ -147,44 +162,52 @@ export async function listRooms(actor) {
     where: memberKey(actor),
     include: { room: { include: { organization: { select: { name: true } }, members: true } } },
   });
+  const roomIds = memberships.map((m) => m.roomId);
+  if (roomIds.length === 0) return [];
 
-  const rooms = [];
-  for (const m of memberships) {
+  // One query each for unread counts, latest messages and the names of the
+  // other person in each private chat — not one set per room.
+  const mine = actor.kind === 'platform' ? Prisma.sql`m.platform_admin_id = ${actor.id}::uuid` : Prisma.sql`m.user_id = ${actor.id}::uuid`;
+  const notMine = actor.kind === 'platform' ? Prisma.sql`msg.sender_platform_admin_id IS DISTINCT FROM ${actor.id}::uuid` : Prisma.sql`msg.sender_user_id IS DISTINCT FROM ${actor.id}::uuid`;
+  const otherMembers = memberships
+    .filter((m) => m.room.type === 'direct')
+    .flatMap((m) => m.room.members.filter((x) => (actor.kind === 'platform' ? x.platformAdminId !== actor.id : x.userId !== actor.id)));
+
+  const [unreadRows, lastMessages, names] = await Promise.all([
+    prisma.$queryRaw`
+      SELECT m.room_id AS "roomId", COUNT(msg.id)::int AS unread
+      FROM chat_members m
+      LEFT JOIN chat_messages msg ON msg.room_id = m.room_id
+        AND (m.last_read_at IS NULL OR msg.created_at > m.last_read_at)
+        AND ${notMine}
+      WHERE ${mine}
+      GROUP BY m.room_id`,
+    prisma.chatMessage.findMany({ where: { roomId: { in: roomIds } }, distinct: ['roomId'], orderBy: [{ roomId: 'asc' }, { createdAt: 'desc' }] }),
+    nameMap(otherMembers),
+  ]);
+  const unreadByRoom = new Map(unreadRows.map((r) => [r.roomId, r.unread]));
+  const lastByRoom = new Map(lastMessages.map((m) => [m.roomId, m]));
+
+  const rooms = memberships.map((m) => {
     const room = m.room;
-    const [unread, last] = await Promise.all([
-      prisma.chatMessage.count({
-        where: {
-          roomId: room.id,
-          ...(m.lastReadAt ? { createdAt: { gt: m.lastReadAt } } : {}),
-          NOT: actor.kind === 'platform' ? { senderPlatformAdminId: actor.id } : { senderUserId: actor.id },
-        },
-      }),
-      prisma.chatMessage.findFirst({ where: { roomId: room.id }, orderBy: { createdAt: 'desc' } }),
-    ]);
-
     let title = ROOM_TITLES[room.type] ?? room.name;
     let other = null;
     if (room.type === 'direct') {
       const otherMember = room.members.find((x) => (actor.kind === 'platform' ? x.platformAdminId !== actor.id : x.userId !== actor.id));
-      const names = await nameMap(otherMember ? [otherMember] : []);
       const ref = otherMember ? (otherMember.userId ? refOf('user', otherMember.userId) : refOf('platform', otherMember.platformAdminId)) : null;
       other = ref ? { ref, ...(names.get(ref) ?? { name: 'Unknown', role: 'member' }) } : null;
       title = other?.name ?? 'Conversation';
     } else if (room.type === 'support') {
       title = actor.kind === 'platform' ? `${room.organization?.name ?? 'Organization'} — support` : 'Platform support';
     }
-
-    rooms.push({
-      id: room.id,
-      type: room.type,
-      title,
-      other,
-      memberCount: room.members.length,
-      unread,
+    const last = lastByRoom.get(room.id);
+    return {
+      id: room.id, type: room.type, title, other, memberCount: room.members.length,
+      unread: unreadByRoom.get(room.id) ?? 0,
       lastMessage: last ? serializeMessage(last) : null,
       createdAt: room.createdAt,
-    });
-  }
+    };
+  });
 
   rooms.sort((a, b) => new Date(b.lastMessage?.createdAt ?? b.createdAt) - new Date(a.lastMessage?.createdAt ?? a.createdAt));
   return rooms;

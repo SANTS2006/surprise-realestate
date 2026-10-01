@@ -39,6 +39,12 @@ export function errorHandler(err, req, res, next) {
     });
   }
 
+  // Body-parser rejections (e.g. an upload over the size cap) are the caller's
+  // mistake, not a server fault.
+  if (err?.type === 'entity.too.large') {
+    return sendError(res, { code: 'PAYLOAD_TOO_LARGE', message: 'That upload is too large.', statusCode: 413 });
+  }
+
   // Known Prisma error shapes are translated, never passed through raw.
   if (err?.code?.startsWith?.('P')) {
     logger.error({ requestId, prismaCode: err.code, err }, 'database error');
