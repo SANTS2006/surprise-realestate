@@ -27,6 +27,9 @@ export const authenticate = asyncHandler(async (req, res, next) => {
     }
 
     const user = await findUserByIdUnscoped(req.session.userId);
+    if (user?.status === 'inactive') {
+      return req.session.destroy(() => next(AppError.forbidden('Your account has been deactivated. Please contact your administrator.')));
+    }
     if (!user || user.status !== 'active' || user.organizationId !== req.session.organizationId) {
       return req.session.destroy(() => next(AppError.unauthorized('Your session is no longer valid. Please sign in again.')));
     }

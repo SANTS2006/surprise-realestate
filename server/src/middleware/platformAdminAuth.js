@@ -12,8 +12,11 @@ export const authenticatePlatformAdmin = asyncHandler(async (req, res, next) => 
   if (!req.session?.platformAdminId) throw AppError.unauthorized();
 
   const admin = await findPlatformAdminById(req.session.platformAdminId);
-  if (!admin || !admin.isActive) {
+  if (!admin) {
     return req.session.destroy(() => next(AppError.unauthorized('Your session is no longer valid. Please sign in again.')));
+  }
+  if (!admin.isActive) {
+    return req.session.destroy(() => next(AppError.forbidden('Your account has been deactivated. Please contact the platform administrator.')));
   }
 
   req.platformAdmin = { id: admin.id, email: admin.email, firstName: admin.firstName, lastName: admin.lastName };

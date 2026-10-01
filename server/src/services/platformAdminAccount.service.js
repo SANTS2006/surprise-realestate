@@ -6,16 +6,20 @@ import { platformAdminResetEmail, platformAdminInviteEmail } from '../integratio
 import {
   findPlatformAdminByEmail, findPlatformAdminById, findAllPlatformAdmins, countActivePlatformAdmins,
   createPlatformAdmin, updatePlatformAdmin, setPlatformAdminPassword,
+  findDefaultPlatformAdmin, deletePlatformAdminById,
   createPlatformAdminResetToken, findValidPlatformAdminResetToken, invalidatePlatformAdminResetTokens,
   markPlatformAdminResetTokenUsed,
 } from '../repositories/platformAdmin.repository.js';
 import { logger } from '../config/logger.js';
+import { prisma } from '../config/database.js';
+import { platformAudit } from './platformAudit.service.js';
 
 const RESET_TOKEN_TTL_MS = 15 * 60 * 1000;
 const INVITE_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-export function serializePlatformAdmin(admin) {
+export function serializePlatformAdmin(admin, defaultId = null) {
   return {
+    isDefault: defaultId !== null && admin.id === defaultId,
     id: admin.id,
     firstName: admin.firstName,
     lastName: admin.lastName,
@@ -58,12 +62,13 @@ export async function resetPasswordWithToken({ token, password }) {
   await invalidatePlatformAdminResetTokens(admin.id);
 
   logger.info({ platformAdminId: admin.id }, 'platform admin password reset completed');
+  await platformAudit({ actor: admin, action: 'auth.password_reset', targetType: 'platform_admin', targetId: admin.id, targetLabel: admin.email });
   return { reset: true };
 }
 
 // ── Own account ─────────────────────────────────────────────────────────
 
-export async function changeOwnPassword(adminId, { currentPassword, newPassword }) {
+export async function changeOwnPassword(adminId, { currentPassword, newPassword }, actor, req) {
   const admin = await findPlatformAdminById(adminId);
   if (!admin) throw AppError.unauthorized();
 
@@ -77,6 +82,7 @@ export async function changeOwnPassword(adminId, { currentPassword, newPassword 
   assertPasswordPolicy(newPassword, { email: admin.email, firstName: admin.firstName, lastName: admin.lastName });
   await setPlatformAdminPassword(admin.id, await hashPassword(newPassword));
   logger.info({ platformAdminId: admin.id }, 'platform admin changed their password');
+  await platformAudit({ actor, action: 'auth.password_changed', targetType: 'platform_admin', targetId: admin.id, targetLabel: admin.email, req });
   return { changed: true };
 }
 
@@ -88,14 +94,14 @@ export async function updateOwnProfile(adminId, { firstName, lastName }) {
 // ── Managing other platform admins ──────────────────────────────────────
 
 export async function listPlatformAdmins() {
-  const admins = await findAllPlatformAdmins();
-  return admins.map(serializePlatformAdmin);
+  const [admins, defaultAdmin] = await Promise.all([findAllPlatformAdmins(), findDefaultPlatformAdmin()]);
+  return admins.map((a) => serializePlatformAdmin(a, defaultAdmin?.id ?? null));
 }
 
 // The new admin never receives a usable password: a random one is stored
 // only to satisfy the not-null column, and the way in is the emailed
 // "set your password" link.
-export async function createPlatformAdminByAdmin({ firstName, lastName, email }, actingAdminId) {
+export async function createPlatformAdminByAdmin({ firstName, lastName, email }, actingAdminId, actor, req) {
   const existing = await findPlatformAdminByEmail(email);
   if (existing) throw AppError.conflict('A platform admin with this email already exists.');
 
@@ -114,10 +120,11 @@ export async function createPlatformAdminByAdmin({ firstName, lastName, email },
   }
 
   logger.info({ platformAdminId: admin.id, createdBy: actingAdminId }, 'platform admin created');
+  await platformAudit({ actor, action: 'admin.created', targetType: 'platform_admin', targetId: admin.id, targetLabel: admin.email, req });
   return serializePlatformAdmin(admin);
 }
 
-export async function setPlatformAdminActive(id, isActive, actingAdminId) {
+export async function setPlatformAdminActive(id, isActive, actingAdminId, actor, req) {
   const target = await findPlatformAdminById(id);
   if (!target) throw AppError.notFound('Platform admin not found.');
 
@@ -130,5 +137,26 @@ export async function setPlatformAdminActive(id, isActive, actingAdminId) {
 
   const admin = await updatePlatformAdmin(id, { isActive });
   logger.info({ platformAdminId: id, isActive, by: actingAdminId }, 'platform admin status changed');
+  await platformAudit({ actor, action: isActive ? 'admin.reactivated' : 'admin.deactivated', targetType: 'platform_admin', targetId: id, targetLabel: target.email, req });
   return serializePlatformAdmin(admin);
+}
+
+// Permanently removes another platform admin and ends all of their sessions.
+// The default platform admin (the first one ever created) can never be
+// deleted, and nobody can delete themselves. Audit history is kept: log rows
+// store the actor as a snapshot rather than a reference.
+export async function deletePlatformAdmin(id, actingAdminId, actor, req) {
+  const target = await findPlatformAdminById(id);
+  if (!target) throw AppError.notFound('Platform admin not found.');
+  if (id === actingAdminId) throw AppError.badRequest('You cannot delete your own account.');
+
+  const defaultAdmin = await findDefaultPlatformAdmin();
+  if (defaultAdmin?.id === id) throw AppError.badRequest('The default platform admin cannot be deleted.');
+
+  await deletePlatformAdminById(id);
+  await prisma.$executeRaw`DELETE FROM "session" WHERE sess->>'platformAdminId' = ${id}`;
+
+  logger.info({ platformAdminId: id, by: actingAdminId }, 'platform admin deleted');
+  await platformAudit({ actor, action: 'admin.deleted', targetType: 'platform_admin', targetId: id, targetLabel: target.email, req });
+  return { deleted: true };
 }

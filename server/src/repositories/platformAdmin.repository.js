@@ -77,3 +77,12 @@ export function invalidatePlatformAdminResetTokens(platformAdminId) {
 export function markPlatformAdminResetTokenUsed(id) {
   return prisma.platformAdminPasswordResetToken.update({ where: { id }, data: { usedAt: new Date() } });
 }
+
+// The default platform admin is simply the first one ever created.
+export function findDefaultPlatformAdmin() {
+  return prisma.platformAdmin.findFirst({ orderBy: { createdAt: 'asc' } });
+}
+
+export function deletePlatformAdminById(id) {
+  return prisma.platformAdmin.delete({ where: { id } });
+}

@@ -23,6 +23,7 @@ import { findRoleByName, assignRoleToUser } from '../repositories/role.repositor
 import { bootstrapDefaultRoles } from './role.service.js';
 import { generateUniqueReferralCode } from '../utils/referralCode.js';
 import { logger } from '../config/logger.js';
+import { platformAudit } from './platformAudit.service.js';
 import { env } from '../config/env.js';
 
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
@@ -54,7 +55,7 @@ export async function loginPlatformAdmin({ email, password }, req) {
 
   // Only someone holding the right password learns the account is deactivated.
   if (!admin.isActive) {
-    throw AppError.forbidden('This platform admin account has been deactivated.');
+    throw AppError.forbidden('Your account has been deactivated. Please contact the platform administrator.');
   }
 
   await resetPlatformAdminFailedLogins(admin.id);
@@ -68,6 +69,7 @@ export async function loginPlatformAdmin({ email, password }, req) {
   });
 
   logger.info({ platformAdminId: admin.id }, 'platform admin logged in');
+  await platformAudit({ actor: admin, action: 'auth.login', req });
   return { admin: { id: admin.id, firstName: admin.firstName, lastName: admin.lastName, email: admin.email } };
 }
 
@@ -124,7 +126,7 @@ export async function getOrganizationDetailForPlatformAdmin(id) {
 
 // The URL name (slug) is deliberately not editable — it's baked into every
 // link the organization's users have bookmarked or been emailed.
-export async function updateOrganizationByPlatformAdmin(id, body) {
+export async function updateOrganizationByPlatformAdmin(id, body, actor, req) {
   const organization = await findOrganizationById(id);
   if (!organization) throw AppError.notFound('Organization not found.');
 
@@ -136,6 +138,7 @@ export async function updateOrganizationByPlatformAdmin(id, body) {
 
   const updated = await updateOrganization(id, data);
   logger.info({ organizationId: id, fields: Object.keys(data) }, 'organization updated by platform admin');
+  await platformAudit({ actor, action: 'organization.updated', targetType: 'organization', targetId: id, targetLabel: updated.name, details: { fields: Object.keys(data) }, req });
   return serializeOrganizationForPlatformAdmin(updated);
 }
 
@@ -143,7 +146,7 @@ export async function updateOrganizationByPlatformAdmin(id, body) {
 // on the organization's own branded, slug-scoped page — for when they're
 // locked out and have lost their way in. The platform admin never sees or
 // sets the password itself.
-export async function sendOrganizationAdminPasswordReset(organizationId, userId) {
+export async function sendOrganizationAdminPasswordReset(organizationId, userId, actor, req) {
   const organization = await findOrganizationById(organizationId);
   if (!organization) throw AppError.notFound('Organization not found.');
 
@@ -157,6 +160,7 @@ export async function sendOrganizationAdminPasswordReset(organizationId, userId)
   await sendMail({ to: user.email, subject, html, text });
 
   logger.info({ organizationId, userId }, 'password reset link sent to organization user by platform admin');
+  await platformAudit({ actor, action: 'organization.admin_reset_sent', targetType: 'organization', targetId: organizationId, targetLabel: organization.name, details: { sentTo: user.email }, req });
   return { sentTo: user.email };
 }
 
@@ -171,7 +175,7 @@ export async function sendOrganizationAdminPasswordReset(organizationId, userId)
 // with the org row updated in a follow-up call once it succeeds.
 export async function createOrganizationByPlatformAdmin({
   name, slug: rawSlug, adminFirstName, adminLastName, adminEmail, primaryColor, secondaryColor, logoFile,
-}) {
+}, actor, req) {
   const slug = normalizeSlug(rawSlug);
   const slugError = assertValidSlug(slug);
   if (slugError) throw AppError.badRequest(slugError);
@@ -207,35 +211,11 @@ export async function createOrganizationByPlatformAdmin({
 
   if (logoFile) {
     try {
-      const { resourceType, mimeType, safeFilename } = await validateUploadedFile(logoFile.buffer, logoFile.originalname, logoFile.mimetype);
-      const uploadResult = await uploadToCloudinary(logoFile.buffer, {
-        organizationId: organization.id, entityType: 'organization', entityId: organization.id, resourceType, safeFilename,
-      });
-      let document;
-      try {
-        document = await createDocument({
-          organizationId: organization.id,
-          entityType: 'organization',
-          entityId: organization.id,
-          cloudinaryPublicId: uploadResult.public_id,
-          cloudinaryResourceType: uploadResult.resource_type,
-          cloudinaryAssetType: 'authenticated',
-          originalFilename: safeFilename,
-          mimeType,
-          fileSize: uploadResult.bytes,
-          uploadedBy: adminUser.id,
-          status: 'active',
-        });
-      } catch (err) {
-        await destroyCloudinaryAsset({ publicId: uploadResult.public_id, resourceType: uploadResult.resource_type });
-        throw err;
-      }
-      await updateOrganization(organization.id, { logoDocumentId: document.id });
+      await storeOrganizationLogo(organization, logoFile, adminUser.id);
     } catch (err) {
       // The organization and its administrator already exist and are usable
       // without a logo — a failed logo upload must never undo that. Logged
-      // for follow-up; the platform admin can re-upload from the org's own
-      // Settings page once they're able to sign in.
+      // for follow-up; the logo can be replaced later from the console.
       logger.error({ err, organizationId: organization.id }, 'logo upload failed during organization creation');
     }
   }
@@ -251,15 +231,17 @@ export async function createOrganizationByPlatformAdmin({
   }
 
   logger.info({ organizationId: organization.id, slug }, 'organization created by platform admin');
+  await platformAudit({ actor, action: 'organization.created', targetType: 'organization', targetId: organization.id, targetLabel: name, details: { slug, adminEmail }, req });
   return { organization: serializeOrganizationForPlatformAdmin(organization), loginUrl };
 }
 
-export async function setOrganizationStatusByPlatformAdmin(organizationId, status) {
+export async function setOrganizationStatusByPlatformAdmin(organizationId, status, actor, req) {
   const organization = await findOrganizationById(organizationId);
   if (!organization) throw AppError.notFound('Organization not found.');
 
   const updated = await updateOrganizationStatus(organizationId, status);
   logger.info({ organizationId, status }, 'organization status changed by platform admin');
+  await platformAudit({ actor, action: status === 'active' ? 'organization.reactivated' : 'organization.deactivated', targetType: 'organization', targetId: organizationId, targetLabel: organization.name, req });
   return serializeOrganizationForPlatformAdmin(updated);
 }
 
@@ -288,4 +270,67 @@ export async function getOrganizationBrandingBySlug(slug) {
     logoUrl,
     active: organization.status === 'active',
   };
+}
+
+// Uploads `file` as the organization's logo and points the organization at
+// it, then removes the previous logo (document row + Cloudinary asset) so
+// replacing a logo never leaves orphaned files behind. `uploadedByUserId`
+// must be a real user of the organization (documents record their
+// uploader).
+export async function storeOrganizationLogo(organization, file, uploadedByUserId) {
+  const { resourceType, mimeType, safeFilename } = await validateUploadedFile(file.buffer, file.originalname, file.mimetype);
+  if (resourceType !== 'image') throw AppError.badRequest('The logo must be an image (PNG, JPG, WebP or SVG).');
+
+  const uploadResult = await uploadToCloudinary(file.buffer, {
+    organizationId: organization.id, entityType: 'organization', entityId: organization.id, resourceType, safeFilename,
+  });
+
+  let document;
+  try {
+    document = await createDocument({
+      organizationId: organization.id,
+      entityType: 'organization',
+      entityId: organization.id,
+      cloudinaryPublicId: uploadResult.public_id,
+      cloudinaryResourceType: uploadResult.resource_type,
+      cloudinaryAssetType: 'authenticated',
+      originalFilename: safeFilename,
+      mimeType,
+      fileSize: uploadResult.bytes,
+      uploadedBy: uploadedByUserId,
+      status: 'active',
+    });
+  } catch (err) {
+    await destroyCloudinaryAsset({ publicId: uploadResult.public_id, resourceType: uploadResult.resource_type });
+    throw err;
+  }
+
+  const previousDocumentId = organization.logoDocumentId;
+  await updateOrganization(organization.id, { logoDocumentId: document.id });
+
+  if (previousDocumentId) {
+    const previous = await prisma.document.findUnique({ where: { id: previousDocumentId } });
+    if (previous) {
+      await destroyCloudinaryAsset({ publicId: previous.cloudinaryPublicId, resourceType: previous.cloudinaryResourceType })
+        .catch((err) => logger.error({ err, documentId: previous.id }, 'failed to remove previous logo asset'));
+      await prisma.document.delete({ where: { id: previous.id } }).catch(() => {});
+    }
+  }
+  return document;
+}
+
+export async function replaceOrganizationLogoByPlatformAdmin(organizationId, file, actor, req) {
+  if (!file) throw AppError.badRequest('Choose an image to upload.');
+  const organization = await findOrganizationById(organizationId);
+  if (!organization) throw AppError.notFound('Organization not found.');
+
+  // Documents record an uploader from the organization's own users; use its
+  // first administrator.
+  const detail = await findOrganizationDetail(organizationId);
+  const uploader = detail?.administrators[0];
+  if (!uploader) throw AppError.badRequest('This organization has no administrator to attribute the upload to.');
+
+  await storeOrganizationLogo(organization, file, uploader.id);
+  await platformAudit({ actor, action: 'organization.logo_replaced', targetType: 'organization', targetId: organizationId, targetLabel: organization.name, req });
+  return serializeOrganizationForPlatformAdmin(await findOrganizationById(organizationId));
 }

@@ -999,3 +999,26 @@ model PlatformAdminPasswordResetToken {
   @@index([platformAdminId])
   @@map("platform_admin_password_reset_tokens")
 }
+
+// Append-only record of what platform admins do (sign-ins, organization and
+// administrator changes). The actor is stored as a snapshot (id + name +
+// email) rather than a foreign key, so the history survives that admin
+// being deleted later.
+model PlatformAuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorId     String?  @map("actor_id") @db.Uuid
+  actorName   String   @map("actor_name")
+  actorEmail  String   @map("actor_email")
+  action      String
+  targetType  String?  @map("target_type")
+  targetId    String?  @map("target_id")
+  targetLabel String?  @map("target_label")
+  details     Json?
+  ipAddress   String?  @map("ip_address")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([actorId])
+  @@map("platform_audit_logs")
+}

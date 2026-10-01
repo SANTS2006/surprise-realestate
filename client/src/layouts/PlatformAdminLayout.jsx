@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { ShieldCheck, LogOut, LayoutDashboard, Building2, Users, UserCog } from 'lucide-react';
+import { ShieldCheck, LogOut, LayoutDashboard, Building2, Users, UserCog, ScrollText } from 'lucide-react';
 import clsx from 'clsx';
 import { Button } from '../components/ui/Button.jsx';
 import { ThemeToggle } from '../components/ui/ThemeToggle.jsx';
@@ -11,6 +11,7 @@ const NAV = [
   { to: '/platform-admin', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/platform-admin/organizations', label: 'Organizations', icon: Building2 },
   { to: '/platform-admin/administrators', label: 'Administrators', icon: Users },
+  { to: '/platform-admin/audit-log', label: 'Audit log', icon: ScrollText },
   { to: '/platform-admin/account', label: 'My account', icon: UserCog },
 ];
 

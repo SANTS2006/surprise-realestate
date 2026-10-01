@@ -25,6 +25,8 @@ platformAdminRouter.get('/overview', authenticatePlatformAdmin, platformAdminCon
 
 platformAdminRouter.get('/admins', authenticatePlatformAdmin, platformAdminController.listAdmins);
 platformAdminRouter.post('/admins', authenticatePlatformAdmin, csrfProtection, validate(createPlatformAdminSchema), platformAdminController.createAdmin);
+platformAdminRouter.delete('/admins/:id', authenticatePlatformAdmin, csrfProtection, validate(organizationIdParamSchema), platformAdminController.deleteAdmin);
+platformAdminRouter.get('/audit-logs', authenticatePlatformAdmin, platformAdminController.listAuditLogs);
 platformAdminRouter.patch('/admins/:id/status', authenticatePlatformAdmin, csrfProtection, validate(platformAdminStatusSchema), platformAdminController.setAdminStatus);
 
 platformAdminRouter.get('/organizations', authenticatePlatformAdmin, platformAdminController.listOrganizations);
@@ -38,6 +40,7 @@ platformAdminRouter.post(
 );
 platformAdminRouter.get('/organizations/:id', authenticatePlatformAdmin, validate(organizationIdParamSchema), platformAdminController.getOrganization);
 platformAdminRouter.patch('/organizations/:id', authenticatePlatformAdmin, csrfProtection, validate(updateOrganizationSchema), platformAdminController.updateOrganization);
+platformAdminRouter.post('/organizations/:id/logo', authenticatePlatformAdmin, csrfProtection, singleFileUpload('logo'), validate(organizationIdParamSchema), platformAdminController.replaceOrganizationLogo);
 platformAdminRouter.post('/organizations/:id/send-admin-reset', authenticatePlatformAdmin, csrfProtection, validate(sendAdminResetSchema), platformAdminController.sendOrganizationAdminReset);
 platformAdminRouter.patch(
   '/organizations/:id/status',

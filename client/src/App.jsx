@@ -53,6 +53,7 @@ const ReferralsPage = lazy(() => import('./pages/referrals/ReferralsPage.jsx'));
 const PlatformAdminOverviewPage = lazy(() => import('./pages/platformAdmin/PlatformAdminOverviewPage.jsx'));
 const PlatformAdminOrganizationsPage = lazy(() => import('./pages/platformAdmin/PlatformAdminOrganizationsPage.jsx'));
 const PlatformAdminAdministratorsPage = lazy(() => import('./pages/platformAdmin/PlatformAdminAdministratorsPage.jsx'));
+const PlatformAdminAuditLogPage = lazy(() => import('./pages/platformAdmin/PlatformAdminAuditLogPage.jsx'));
 const PlatformAdminAccountPage = lazy(() => import('./pages/platformAdmin/PlatformAdminAccountPage.jsx'));
 
 export default function App() {
@@ -90,6 +91,7 @@ export default function App() {
                 <Route path="/platform-admin" element={<Suspense fallback={<LoadingState />}><PlatformAdminOverviewPage /></Suspense>} />
                 <Route path="/platform-admin/organizations" element={<Suspense fallback={<LoadingState />}><PlatformAdminOrganizationsPage /></Suspense>} />
                 <Route path="/platform-admin/administrators" element={<Suspense fallback={<LoadingState />}><PlatformAdminAdministratorsPage /></Suspense>} />
+                <Route path="/platform-admin/audit-log" element={<Suspense fallback={<LoadingState />}><PlatformAdminAuditLogPage /></Suspense>} />
                 <Route path="/platform-admin/account" element={<Suspense fallback={<LoadingState />}><PlatformAdminAccountPage /></Suspense>} />
               </Route>
             </Route>

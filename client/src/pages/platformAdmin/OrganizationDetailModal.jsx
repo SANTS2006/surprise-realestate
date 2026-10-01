@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ExternalLink, Mail, Check } from 'lucide-react';
+import { ExternalLink, Mail, Check, ImagePlus } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal.jsx';
 import { Field } from '../../components/ui/Input.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -40,6 +40,7 @@ export function OrganizationDetailModal({ orgId, onClose, onChanged }) {
   const [notice, setNotice] = useState(null);
   const [sendingTo, setSendingTo] = useState(null);
   const [sentTo, setSentTo] = useState({});
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const { register, handleSubmit, reset, formState: { errors, isSubmitting, isDirty } } = useForm({ resolver: zodResolver(schema) });
 
   useEffect(() => {
@@ -73,6 +74,25 @@ export function OrganizationDetailModal({ orgId, onClose, onChanged }) {
       onChanged();
     } catch (err) {
       setError(err.details?.map((d) => d.message).join(' ') || err.message);
+    }
+  };
+
+  const onLogoChosen = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setUploadingLogo(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await platformAdminApi.replaceOrganizationLogo(orgId, file);
+      setDetail((d) => ({ ...d, ...res.data }));
+      setNotice('Logo updated.');
+      onChanged();
+    } catch (err) {
+      setError(err.details?.map((d) => d.message).join(' ') || err.message);
+    } finally {
+      setUploadingLogo(false);
     }
   };
 
@@ -110,6 +130,18 @@ export function OrganizationDetailModal({ orgId, onClose, onChanged }) {
             </a>
             <span className="text-slate-500 dark:text-slate-400">Created {new Date(detail.createdAt).toLocaleDateString()}</span>
           </div>
+
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Logo</h3>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm text-slate-600 dark:text-slate-400">{detail.hasLogo ? 'A logo is set.' : 'No logo yet — the default mark is shown.'}</span>
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-brand-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+                <ImagePlus size={14} aria-hidden="true" />
+                {uploadingLogo ? 'Uploading…' : detail.hasLogo ? 'Replace logo' : 'Upload logo'}
+                <input type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="sr-only" disabled={uploadingLogo} onChange={onLogoChosen} />
+              </label>
+            </div>
+          </section>
 
           <section>
             <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">Administrators</h3>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Users, UserPlus, UserX, UserCheck } from 'lucide-react';
+import { Users, UserPlus, UserX, UserCheck, Trash2 } from 'lucide-react';
 import { PageHeader } from '../../components/ui/PageHeader.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Badge } from '../../components/ui/Badge.jsx';
@@ -66,6 +66,7 @@ export default function PlatformAdminAdministratorsPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [added, setAdded] = useState(null);
   const [pending, setPending] = useState(null); // { admin, nextActive }
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const load = useCallback(() => {
     setError(null);
@@ -80,6 +81,16 @@ export default function PlatformAdminAdministratorsPage() {
     if (!pending) return;
     try {
       await platformAdminApi.setAdminActive(pending.admin.id, pending.nextActive);
+    } catch (err) {
+      setError(err.message);
+    }
+    load();
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    try {
+      await platformAdminApi.deleteAdmin(pendingDelete.id);
     } catch (err) {
       setError(err.message);
     }
@@ -123,11 +134,13 @@ export default function PlatformAdminAdministratorsPage() {
                   <Td>
                     <span className="font-medium text-slate-900 dark:text-slate-100">{a.firstName} {a.lastName}</span>
                     {a.id === me?.id && <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">(you)</span>}
+                    {a.isDefault && <Badge tone="brand" className="ml-2">Default</Badge>}
                   </Td>
                   <Td>{a.email}</Td>
                   <Td><Badge tone={a.isActive ? 'success' : 'danger'}>{a.isActive ? 'Active' : 'Deactivated'}</Badge></Td>
                   <Td>{a.lastLoginAt ? new Date(a.lastLoginAt).toLocaleDateString() : 'Never'}</Td>
                   <Td className="text-right">
+                    <div className="flex justify-end gap-2">
                     {a.id !== me?.id && (a.isActive ? (
                       <Button variant="danger" size="sm" onClick={() => setPending({ admin: a, nextActive: false })}>
                         <UserX size={14} aria-hidden="true" />
@@ -139,6 +152,13 @@ export default function PlatformAdminAdministratorsPage() {
                         Reactivate
                       </Button>
                     ))}
+                    {a.id !== me?.id && !a.isDefault && (
+                      <Button variant="danger" size="sm" onClick={() => setPendingDelete(a)} aria-label={`Delete ${a.firstName} ${a.lastName}`}>
+                        <Trash2 size={14} aria-hidden="true" />
+                        Delete
+                      </Button>
+                    )}
+                    </div>
                   </Td>
                 </Tr>
               ))}
@@ -161,6 +181,16 @@ export default function PlatformAdminAdministratorsPage() {
         }
         confirmLabel={pending?.nextActive ? 'Reactivate' : 'Deactivate'}
         variant={pending?.nextActive ? 'primary' : 'danger'}
+      />
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete administrator?"
+        description={`${pendingDelete?.firstName} ${pendingDelete?.lastName} (${pendingDelete?.email}) will be permanently removed and signed out everywhere. This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
       />
     </>
   );

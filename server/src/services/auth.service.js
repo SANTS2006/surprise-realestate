@@ -231,7 +231,7 @@ export async function login({ email, password }, organization, req) {
     throw AppError.forbidden('Please verify your email address before signing in.');
   }
   if (user.status === 'inactive' || user.status === 'locked') {
-    throw AppError.forbidden('This account is not active. Please contact your administrator.');
+    throw AppError.forbidden(user.status === 'inactive' ? 'Your account has been deactivated. Please contact your administrator.' : 'This account is not active. Please contact your administrator.');
   }
 
   if (user.mfaEnabled) {

@@ -2,6 +2,8 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import * as platformAdminService from '../services/platformAdmin.service.js';
 import * as accountService from '../services/platformAdminAccount.service.js';
+import { listPlatformAuditLogs } from '../services/platformAudit.service.js';
+import { parsePagination } from '../utils/pagination.js';
 
 export const login = asyncHandler(async (req, res) => {
   const result = await platformAdminService.loginPlatformAdmin(req.body, req);
@@ -26,11 +28,11 @@ export const getOrganization = asyncHandler(async (req, res) => {
 });
 
 export const updateOrganization = asyncHandler(async (req, res) => {
-  sendSuccess(res, { data: await platformAdminService.updateOrganizationByPlatformAdmin(req.params.id, req.body), message: 'Organization updated.' });
+  sendSuccess(res, { data: await platformAdminService.updateOrganizationByPlatformAdmin(req.params.id, req.body, req.platformAdmin, req), message: 'Organization updated.' });
 });
 
 export const sendOrganizationAdminReset = asyncHandler(async (req, res) => {
-  const result = await platformAdminService.sendOrganizationAdminPasswordReset(req.params.id, req.body.userId);
+  const result = await platformAdminService.sendOrganizationAdminPasswordReset(req.params.id, req.body.userId, req.platformAdmin, req);
   sendSuccess(res, { data: result, message: 'Password reset link sent.' });
 });
 
@@ -47,7 +49,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
 });
 
 export const changePassword = asyncHandler(async (req, res) => {
-  await accountService.changeOwnPassword(req.platformAdmin.id, req.body);
+  await accountService.changeOwnPassword(req.platformAdmin.id, req.body, req.platformAdmin, req);
   sendSuccess(res, { data: null, message: 'Password changed successfully.' });
 });
 
@@ -62,12 +64,12 @@ export const listAdmins = asyncHandler(async (req, res) => {
 });
 
 export const createAdmin = asyncHandler(async (req, res) => {
-  const admin = await accountService.createPlatformAdminByAdmin(req.body, req.platformAdmin.id);
+  const admin = await accountService.createPlatformAdminByAdmin(req.body, req.platformAdmin.id, req.platformAdmin, req);
   sendSuccess(res, { statusCode: 201, data: admin, message: 'Platform admin added and invited by email.' });
 });
 
 export const setAdminStatus = asyncHandler(async (req, res) => {
-  const admin = await accountService.setPlatformAdminActive(req.params.id, req.body.isActive, req.platformAdmin.id);
+  const admin = await accountService.setPlatformAdminActive(req.params.id, req.body.isActive, req.platformAdmin.id, req.platformAdmin, req);
   sendSuccess(res, { data: admin });
 });
 
@@ -80,11 +82,27 @@ export const createOrganization = asyncHandler(async (req, res) => {
   const result = await platformAdminService.createOrganizationByPlatformAdmin({
     ...req.body,
     logoFile: req.file,
-  });
+  }, req.platformAdmin, req);
   sendSuccess(res, { statusCode: 201, data: result, message: 'Organization created and administrator notified by email.' });
 });
 
 export const setOrganizationStatus = asyncHandler(async (req, res) => {
-  const organization = await platformAdminService.setOrganizationStatusByPlatformAdmin(req.params.id, req.body.status);
+  const organization = await platformAdminService.setOrganizationStatusByPlatformAdmin(req.params.id, req.body.status, req.platformAdmin, req);
   sendSuccess(res, { data: organization });
+});
+
+export const deleteAdmin = asyncHandler(async (req, res) => {
+  await accountService.deletePlatformAdmin(req.params.id, req.platformAdmin.id, req.platformAdmin, req);
+  sendSuccess(res, { data: null, message: 'Platform admin deleted.' });
+});
+
+export const replaceOrganizationLogo = asyncHandler(async (req, res) => {
+  const organization = await platformAdminService.replaceOrganizationLogoByPlatformAdmin(req.params.id, req.file, req.platformAdmin, req);
+  sendSuccess(res, { data: organization, message: 'Logo updated.' });
+});
+
+export const listAuditLogs = asyncHandler(async (req, res) => {
+  const { page, pageSize, skip, take } = parsePagination(req.query);
+  const result = await listPlatformAuditLogs({ page, pageSize, skip, take, action: req.query.action || undefined, search: req.query.search || undefined });
+  sendSuccess(res, { data: { logs: result.logs, actions: result.actions }, meta: result.meta });
 });
