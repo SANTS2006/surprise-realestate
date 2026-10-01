@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
-import { UserCircle, Building2, LogOut } from 'lucide-react';
+import { UserCircle, Building2, LogOut, Share2 } from 'lucide-react';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Alert } from '../../components/ui/Alert.jsx';
@@ -11,6 +11,7 @@ import { OrganizationForm } from '../../components/settings/OrganizationForm.jsx
 import { ProfilePictureCard } from '../../components/settings/ProfilePictureCard.jsx';
 import { authApi } from '../../api/auth.js';
 import { useAuth, getLoginPath } from '../../contexts/AuthContext.jsx';
+import { ShareSystemCard } from '../../components/settings/ShareSystemCard.jsx';
 import { CAN_MANAGE_ORGANIZATION, CAN_VIEW_ORGANIZATION, canAny } from '../../config/capabilities.js';
 
 function AccountTab() {
@@ -89,6 +90,7 @@ export default function SettingsPage() {
   const tabs = [
     { id: 'account', label: 'Account', icon: UserCircle },
     ...(canViewOrg ? [{ id: 'organization', label: 'Organization', icon: Building2 }] : []),
+    ...(canManageOrg ? [{ id: 'share', label: 'Share & QR', icon: Share2 }] : []),
   ];
 
   return (
@@ -114,6 +116,7 @@ export default function SettingsPage() {
 
       {tab === 'account' && <AccountTab />}
       {tab === 'organization' && canViewOrg && <OrganizationForm canManage={canManageOrg} />}
+      {tab === 'share' && canManageOrg && <ShareSystemCard />}
     </div>
   );
 }
