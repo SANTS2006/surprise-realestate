@@ -10,6 +10,27 @@ import { findUnitById, findUnitsByIds } from '../repositories/unit.repository.js
 import { getCoverImageUrls } from './document.service.js';
 import { getRestrictedScope } from './resourceAccess.service.js';
 import { audit } from './audit.service.js';
+import { prisma } from '../config/database.js';
+import { listRentalsForTenant } from './rental.service.js';
+
+// Keeps tenant_rentals in step with the building/unit a staff member picked
+// on the tenant form: that place becomes one of the tenant's rentals (added
+// next to any they already have, never replacing them).
+async function syncRentalFromResidence(organizationId, tenantId, { buildingId, unitId }) {
+  if (!buildingId && !unitId) return;
+  const building = buildingId
+    ? await prisma.building.findFirst({ where: { id: buildingId, property: { organizationId } }, select: { propertyId: true } })
+    : null;
+  if (!building) return;
+  const exists = await prisma.tenantRental.findFirst({
+    where: { tenantId, status: 'active', ...(unitId ? { unitId } : { buildingId, unitId: null }) },
+  });
+  if (!exists) {
+    await prisma.tenantRental.create({
+      data: { organizationId, tenantId, propertyId: building.propertyId, buildingId, unitId: unitId ?? null, source: 'staff' },
+    });
+  }
+}
 
 function serializeTenant(tenant) {
   return {
@@ -93,10 +114,11 @@ export async function listTenants(organizationId, actingUser, { page, pageSize, 
 export async function getTenant(id, organizationId, actingUser) {
   const tenant = await findTenantById(id, organizationId);
   if (!tenant) throw AppError.notFound('Tenant not found.');
+  const withRentals = async () => ({ ...serializeTenant(tenant), rentals: await listRentalsForTenant(tenant.id, organizationId) });
 
   if (actingUser.roles.includes('tenant') && !actingUser.roles.includes('administrator')) {
     if (tenant.userId !== actingUser.id) throw AppError.notFound('Tenant not found.');
-    return serializeTenant(tenant);
+    return withRentals();
   }
 
   const scope = await getRestrictedScope(actingUser, organizationId);
@@ -104,7 +126,7 @@ export async function getTenant(id, organizationId, actingUser) {
     const matches = await countTenantPropertyMatch(tenant.id, scope.propertyIds);
     if (matches === 0) throw AppError.notFound('Tenant not found.');
   }
-  return serializeTenant(tenant);
+  return withRentals();
 }
 
 export async function createTenantRecord(organizationId, body, actingUser, req) {
@@ -126,6 +148,7 @@ export async function createTenantRecord(organizationId, body, actingUser, req) 
     ...residence,
   });
 
+  await syncRentalFromResidence(organizationId, tenant.id, residence);
   await audit({ organizationId, userId: actingUser.id, action: 'tenant.created', entityType: 'tenant', entityId: tenant.id, newValues: { firstName: tenant.firstName, lastName: tenant.lastName }, req });
   return serializeTenant(tenant);
 }
@@ -140,6 +163,7 @@ export async function updateTenantRecord(id, organizationId, body, actingUser, r
   }
 
   await updateTenant(id, organizationId, { ...body, ...residence });
+  await syncRentalFromResidence(organizationId, id, residence);
   await audit({ organizationId, userId: actingUser.id, action: 'tenant.updated', entityType: 'tenant', entityId: id, newValues: body, req });
   return getTenant(id, organizationId, actingUser);
 }

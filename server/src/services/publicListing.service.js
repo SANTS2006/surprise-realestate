@@ -143,9 +143,6 @@ export async function getListingAgentAssignments(unitId, organizationId) {
   return { unit, assignments };
 }
 
-export function primaryOrganizationId() {
-  return env.PRIMARY_ORGANIZATION_ID;
-}
 
 // Real, aggregate-only numbers for the homepage stats strip — deliberately
 // nothing per-record (no names, no addresses here), just counts. Replaces

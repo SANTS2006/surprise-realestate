@@ -4,11 +4,12 @@ import { parsePagination } from '../utils/pagination.js';
 import * as publicListingService from '../services/publicListing.service.js';
 import * as publicInquiryService from '../services/publicInquiry.service.js';
 
-const ORG_ID = publicListingService.primaryOrganizationId();
+// Set by middleware/resolvePublicOrg.js from the URL name in the path.
+const orgId = (req) => req.publicOrgId;
 
 export const listListings = asyncHandler(async (req, res) => {
   const { page, pageSize, skip, take } = parsePagination(req.query);
-  const result = await publicListingService.listPublicListings(ORG_ID, {
+  const result = await publicListingService.listPublicListings(orgId(req), {
     page, pageSize, skip, take,
     city: req.query.neighborhood,
     unitType: req.query.type,
@@ -20,31 +21,31 @@ export const listListings = asyncHandler(async (req, res) => {
 });
 
 export const getListing = asyncHandler(async (req, res) => {
-  const listing = await publicListingService.getPublicListing(req.params.id, ORG_ID);
+  const listing = await publicListingService.getPublicListing(req.params.id, orgId(req));
   sendSuccess(res, { data: listing });
 });
 
 export const getFilterOptions = asyncHandler(async (req, res) => {
-  const options = await publicListingService.getPublicFilterOptions(ORG_ID);
+  const options = await publicListingService.getPublicFilterOptions(orgId(req));
   sendSuccess(res, { data: options });
 });
 
 export const getAgents = asyncHandler(async (req, res) => {
-  const agents = await publicListingService.getPublicAgents(ORG_ID);
+  const agents = await publicListingService.getPublicAgents(orgId(req));
   sendSuccess(res, { data: agents });
 });
 
 export const getStats = asyncHandler(async (req, res) => {
-  const stats = await publicListingService.getPublicStats(ORG_ID);
+  const stats = await publicListingService.getPublicStats(orgId(req));
   sendSuccess(res, { data: stats });
 });
 
 export const createListingInquiry = asyncHandler(async (req, res) => {
-  const result = await publicInquiryService.sendListingInquiry(ORG_ID, { listingId: req.params.id, ...req.body });
+  const result = await publicInquiryService.sendListingInquiry(orgId(req), { listingId: req.params.id, ...req.body });
   sendSuccess(res, { statusCode: 201, data: result, message: 'Your message has been sent.' });
 });
 
 export const createGeneralContact = asyncHandler(async (req, res) => {
-  const result = await publicInquiryService.sendGeneralContact(ORG_ID, req.body);
+  const result = await publicInquiryService.sendGeneralContact(orgId(req), req.body);
   sendSuccess(res, { statusCode: 201, data: result, message: 'Your message has been sent.' });
 });

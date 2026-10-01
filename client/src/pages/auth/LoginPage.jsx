@@ -7,6 +7,7 @@ import { Field } from '../../components/ui/Input.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Alert } from '../../components/ui/Alert.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { getRentIntent, rentPath } from '../../utils/rentIntent.js';
 import { loginSchema, mfaCodeSchema } from '../../validations/auth.js';
 
 export default function LoginPage() {
@@ -26,7 +27,10 @@ export default function LoginPage() {
   // absolute paths are honored so it can't be used as an open redirect.
   const next = searchParams.get('next');
   const safeNext = next && /^\/(?!\/)/.test(next) ? next : null;
-  const redirectTo = location.state?.from ?? safeNext ?? '/home';
+  // Someone who came from "rent this property" on the company website goes
+  // straight back to that request once signed in.
+  const rentIntent = getRentIntent(orgSlug);
+  const redirectTo = location.state?.from ?? (rentIntent ? rentPath(rentIntent) : null) ?? safeNext ?? '/home';
 
   const onSubmitCredentials = async ({ email, password }) => {
     setServerError(null);
@@ -86,14 +90,6 @@ export default function LoginPage() {
     <AuthLayout
       key="credentials"
       title="Login"
-      footer={
-        <>
-          Don't have an account?{' '}
-          <Link to={`/${orgSlug}/register`} className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
-            Create one
-          </Link>
-        </>
-      }
     >
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
       <form onSubmit={credentialsForm.handleSubmit(onSubmitCredentials)} noValidate className="flex flex-col gap-4">

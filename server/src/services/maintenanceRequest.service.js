@@ -7,6 +7,7 @@ import {
 import { findPropertyById } from '../repositories/property.repository.js';
 import { findUnitById } from '../repositories/unit.repository.js';
 import { findTenantById, findTenantByUserId } from '../repositories/tenant.repository.js';
+import { prisma } from '../config/database.js';
 import { findUserById } from '../repositories/user.repository.js';
 import { assertPropertyAccess, getRestrictedScope } from './resourceAccess.service.js';
 import { getCoverImageUrls } from './document.service.js';
@@ -82,6 +83,16 @@ export async function createMaintenanceRequestRecord(organizationId, body, actin
 
     const unit = await findUnitById(unitId, organizationId);
     if (!unit) throw AppError.badRequest('The specified unit does not exist in this organization.');
+
+    // A tenant can only report issues for a place registered to them: a unit
+    // they rent, or a unit inside a building they rent.
+    const covered = await prisma.tenantRental.findFirst({
+      where: {
+        tenantId: tenant.id, status: 'active',
+        OR: [{ unitId }, { buildingId: unit.buildingId, unitId: null }],
+      },
+    });
+    if (!covered) throw AppError.badRequest('You can only report issues for properties registered to you.');
 
     tenantId = tenant.id;
     propertyId = unit.building.propertyId;

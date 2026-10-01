@@ -11,7 +11,7 @@ import { propertiesApi } from '../../api/properties.js';
 import { buildingsApi } from '../../api/buildings.js';
 import { unitsApi } from '../../api/units.js';
 import { tenantsApi } from '../../api/tenants.js';
-import { leasesApi } from '../../api/leases.js';
+import { rentalsApi } from '../../api/rentals.js';
 import { documentsApi } from '../../api/documents.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { maintenanceStaffFormSchema, maintenanceTenantFormSchema, PRIORITIES } from '../../validations/maintenance.js';
@@ -41,9 +41,9 @@ export function CreateMaintenanceRequestModal({ open, onClose, onSaved }) {
     setPendingFiles([]);
     if (isTenant) {
       reset({ unitId: '', title: '', description: '', priority: '' });
-      leasesApi.list({ pageSize: 20 }).then((res) => {
-        const activeLeases = res.data.filter((l) => l.status === 'active');
-        setMyUnits(activeLeases.map((l) => l.unit).filter(Boolean));
+      // Only the places registered to this tenant — never every unit in the system.
+      rentalsApi.scopeOptions().then((res) => {
+        setMyUnits(res.data.units.map((u) => ({ id: u.id, unitNumber: u.unitNumber })));
       }).catch(() => {});
     } else {
       reset({ propertyId: '', buildingId: '', unitId: '', tenantId: '', title: '', description: '', priority: '' });

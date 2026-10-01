@@ -17,7 +17,10 @@ const envSchema = z.object({
   // multi-org SaaS) — every new registration joins this one organization
   // as a `tenant` rather than creating its own org. See
   // auth.service.js#registerOrganization.
-  PRIMARY_ORGANIZATION_ID: z.string().uuid('PRIMARY_ORGANIZATION_ID must be the UUID of the one organization new registrations join'),
+  // Legacy: only used by the un-slugged /public/* routes. The listings site now
+  // addresses its company by URL name (/public/orgs/:orgSlug/*), which needs
+  // no configuration at all.
+  PRIMARY_ORGANIZATION_ID: z.string().uuid('PRIMARY_ORGANIZATION_ID must be the UUID of an organization').optional(),
 
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
   SESSION_IDLE_TIMEOUT_MINUTES: z.coerce.number().int().positive().default(30),

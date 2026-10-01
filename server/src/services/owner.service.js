@@ -9,6 +9,19 @@ import { findUserById } from '../repositories/user.repository.js';
 import { getCoverImageUrls } from './document.service.js';
 import { getRestrictedScope } from './resourceAccess.service.js';
 import { audit } from './audit.service.js';
+import { prisma } from '../config/database.js';
+
+const isTenantOnly = (user) => user.roles.includes('tenant') && !user.roles.includes('administrator');
+
+// Property ids a tenant has rented — the only owners they may see are those
+// who own one of these.
+async function tenantPropertyIds(user, organizationId) {
+  const rows = await prisma.tenantRental.findMany({
+    where: { organizationId, status: 'active', tenant: { userId: user.id } },
+    select: { propertyId: true },
+  });
+  return [...new Set(rows.map((r) => r.propertyId))];
+}
 
 function serializeOwner(owner) {
   return {
@@ -52,10 +65,13 @@ export async function listOwners(organizationId, actingUser, { page, pageSize, s
     return { owners, meta: buildPaginationMeta({ page: 1, pageSize: 1, total: own ? 1 : 0 }) };
   }
 
-  const scope = await getRestrictedScope(actingUser, organizationId);
+  const scope = isTenantOnly(actingUser)
+    ? { propertyIds: await tenantPropertyIds(actingUser, organizationId) }
+    : await getRestrictedScope(actingUser, organizationId);
+  const agentUserId = actingUser.roles.includes('agent') ? actingUser.id : undefined;
   const [owners, total] = await Promise.all([
-    findOwnersByOrganization(organizationId, { skip, take, search, status, propertyIds: scope.propertyIds }),
-    countOwnersByOrganization(organizationId, { search, status, propertyIds: scope.propertyIds }),
+    findOwnersByOrganization(organizationId, { skip, take, search, status, propertyIds: scope.propertyIds, agentUserId }),
+    countOwnersByOrganization(organizationId, { search, status, propertyIds: scope.propertyIds, agentUserId }),
   ]);
   const enriched = await attachOwnerCardFields(organizationId, owners.map(serializeOwner));
   return { owners: enriched, meta: buildPaginationMeta({ page, pageSize, total }) };
@@ -70,9 +86,11 @@ export async function getOwner(id, organizationId, actingUser) {
     return serializeOwner(owner);
   }
 
-  const scope = await getRestrictedScope(actingUser, organizationId);
+  const scope = isTenantOnly(actingUser)
+    ? { propertyIds: await tenantPropertyIds(actingUser, organizationId) }
+    : await getRestrictedScope(actingUser, organizationId);
   if (scope.propertyIds) {
-    const matches = await countOwnerPropertiesInScope(owner.id, scope.propertyIds);
+    const matches = await countOwnerPropertiesInScope(owner.id, scope.propertyIds, actingUser.roles.includes('agent') ? actingUser.id : undefined);
     if (matches === 0) throw AppError.notFound('Owner not found.');
   }
   return serializeOwner(owner);

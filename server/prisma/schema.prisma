@@ -186,6 +186,7 @@ enum NotificationType {
   referral_used
   referral_bonus_approved
   referral_bonus_paid
+  rental_request
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -220,6 +221,8 @@ model Organization {
   updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz
 
   users               User[]
+  tenantRentals       TenantRental[]
+  ownerAgents         OwnerAgent[]
   roles               Role[]
   properties          Property[]
   owners              Owner[]
@@ -294,6 +297,7 @@ model User {
   tenantMessagesReceived   TenantMessage[]
   referralsMade            Referral[]               @relation("ReferralsMade")
   referredBy               Referral?                @relation("ReferralsReceived")
+  ownerLinks               OwnerAgent[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -453,6 +457,7 @@ model Property {
   inspections  Inspection[]
   assignments  PropertyAssignment[]
   tenantMessages TenantMessage[]
+  rentals      TenantRental[]
 
   @@unique([organizationId, propertyCode])
   @@index([organizationId])
@@ -494,6 +499,7 @@ model Building {
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   units    Unit[]
   tenants  Tenant[]
+  rentals  TenantRental[]
 
   @@index([propertyId])
   @@map("buildings")
@@ -518,6 +524,7 @@ model Unit {
   tenants  Tenant[]
   maintenanceRequests MaintenanceRequest[]
   inspections Inspection[]
+  rentals  TenantRental[]
 
   @@unique([buildingId, unitNumber])
   @@index([buildingId])
@@ -542,6 +549,7 @@ model Owner {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   properties   Property[]
+  agentLinks   OwnerAgent[]
 
   @@index([organizationId])
   @@map("owners")
@@ -573,6 +581,7 @@ model Tenant {
   payments     Payment[]
   maintenanceRequests MaintenanceRequest[]
   messagesSent        TenantMessage[]
+  rentals             TenantRental[]
 
   @@index([organizationId])
   @@index([buildingId])
@@ -1021,4 +1030,67 @@ model PlatformAuditLog {
   @@index([action])
   @@index([actorId])
   @@map("platform_audit_logs")
+}
+
+enum RentalStatus {
+  active
+  ended
+}
+
+enum OwnerAgentStatus {
+  active
+  inactive
+}
+
+// One row per property/building/unit a tenant has rented. A tenant is ONE
+// Tenant record (one person, one login) no matter how many places they
+// rent; each additional rental is just another row here, never a new tenant.
+// A unit rental sets unitId; a whole-building rental sets buildingId with no
+// unitId. propertyId is always set so access scoping never needs a join.
+model TenantRental {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  propertyId     String       @map("property_id") @db.Uuid
+  buildingId     String?      @map("building_id") @db.Uuid
+  unitId         String?      @map("unit_id") @db.Uuid
+  status         RentalStatus @default(active)
+  // 'public_site' (the tenant asked via the company website) or 'staff'.
+  source         String       @default("staff")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  endedAt        DateTime?    @map("ended_at") @db.Timestamptz
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property     Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  building     Building?    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  unit         Unit?        @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([tenantId])
+  @@index([propertyId])
+  @@index([unitId])
+  @@map("tenant_rentals")
+}
+
+// Links an agent (a user with the agent role) to an owner. An owner can
+// have many agents and an agent can serve many owners; an agent sees the
+// properties and tenants of every owner they hold an ACTIVE link to. An
+// owner deactivating a link removes the agent's access to that owner only.
+model OwnerAgent {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @map("organization_id") @db.Uuid
+  ownerId        String           @map("owner_id") @db.Uuid
+  agentUserId    String           @map("agent_user_id") @db.Uuid
+  status         OwnerAgentStatus @default(active)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner        Owner        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  agent        User         @relation(fields: [agentUserId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, agentUserId])
+  @@index([organizationId])
+  @@index([agentUserId])
+  @@map("owner_agents")
 }

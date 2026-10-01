@@ -29,6 +29,7 @@ function buildTenantListWhere(organizationId, { search, status, unitId, building
       OR: [
         { building: { propertyId: { in: propertyIds } } },
         { unit: { building: { propertyId: { in: propertyIds } } } },
+        { rentals: { some: { propertyId: { in: propertyIds }, status: 'active' } } },
       ],
     });
   }
@@ -69,6 +70,7 @@ export function countTenantPropertyMatch(tenantId, propertyIds) {
       OR: [
         { building: { propertyId: { in: propertyIds } } },
         { unit: { building: { propertyId: { in: propertyIds } } } },
+        { rentals: { some: { propertyId: { in: propertyIds }, status: 'active' } } },
       ],
     },
   });

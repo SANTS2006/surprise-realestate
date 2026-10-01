@@ -20,6 +20,7 @@ export const NAV_SECTIONS = [
   { label: 'Tenants', icon: Users, to: '/tenants', roles: ['administrator', 'agent', 'owner', 'accountant', 'auditor'] },
   { label: 'Owners', icon: UserCircle, to: '/owners', roles: ['administrator', 'agent', 'accountant', 'auditor'] },
   { label: 'Leases', icon: FileText, to: '/leases', roles: ['administrator', 'agent', 'owner', 'accountant', 'auditor'] },
+  { label: 'My Properties', icon: Home, to: '/my-rentals', roles: ['tenant'] },
   { label: 'My Lease', icon: FileText, to: '/my-lease', roles: ['tenant'] },
   {
     label: 'Finance', icon: Wallet,
@@ -34,7 +35,7 @@ export const NAV_SECTIONS = [
   { label: 'My Payments', icon: Wallet, to: '/my-payments', roles: ['tenant'] },
   {
     label: 'Maintenance', icon: Wrench,
-    roles: ['administrator', 'agent', 'maintenance_manager', 'auditor'],
+    roles: ['administrator', 'agent', 'owner', 'maintenance_manager', 'auditor'],
     children: [
       { label: 'Requests', to: '/maintenance' },
       { label: 'Work Orders', to: '/work-orders' },
@@ -44,8 +45,8 @@ export const NAV_SECTIONS = [
   },
   { label: 'Maintenance', icon: Wrench, to: '/maintenance', roles: ['tenant'] },
   { label: 'Message Manager', icon: MessageSquare, to: '/message-manager', roles: ['tenant'] },
-  { label: 'Tenant Messages', icon: MessageSquare, to: '/tenant-messages', roles: ['administrator', 'agent'] },
-  { label: 'Referrals', icon: Gift, to: '/referrals', roles: ['administrator', 'accountant', 'auditor', 'tenant'] },
+  { label: 'Tenant Messages', icon: MessageSquare, to: '/tenant-messages', roles: ['administrator', 'agent', 'owner'] },
+  { label: 'Referrals', icon: Gift, to: '/referrals', roles: ['administrator', 'accountant', 'auditor', 'tenant', 'owner', 'agent'] },
   { label: 'Notifications', icon: Bell, to: '/notifications' },
   { label: 'Users & Roles', icon: ShieldCheck, to: '/users', roles: ['administrator', 'auditor'] },
   { label: 'Audit Logs', icon: History, to: '/audit-logs', roles: ['administrator', 'auditor'] },

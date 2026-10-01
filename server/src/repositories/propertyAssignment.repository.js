@@ -1,10 +1,16 @@
 import { prisma } from '../config/database.js';
 
+// An agent can reach a property when it is directly assigned to them OR it
+// belongs to an owner they hold an active link to (see OwnerAgent).
 export async function isUserAssignedToProperty(propertyId, userId) {
   const row = await prisma.propertyAssignment.findUnique({
     where: { propertyId_userId: { propertyId, userId } },
   });
-  return Boolean(row);
+  if (row) return true;
+  const viaOwner = await prisma.property.count({
+    where: { id: propertyId, owner: { agentLinks: { some: { agentUserId: userId, status: 'active' } } } },
+  });
+  return viaOwner > 0;
 }
 
 export function findAssignmentsForProperty(propertyId, organizationId) {
@@ -51,9 +57,15 @@ export function unassignUserFromProperty(propertyId, userId, organizationId) {
 // Every property a given user is assigned to, within their organization —
 // used to scope a property_manager/agent's list view (see
 // property.service.js#listProperties).
-export function findPropertyIdsAssignedToUser(userId, organizationId) {
-  return prisma.propertyAssignment.findMany({
-    where: { userId, organizationId },
-    select: { propertyId: true },
-  });
+export async function findPropertyIdsAssignedToUser(userId, organizationId) {
+  const [assigned, viaOwners] = await Promise.all([
+    prisma.propertyAssignment.findMany({ where: { userId, organizationId }, select: { propertyId: true } }),
+    prisma.property.findMany({
+      where: { organizationId, owner: { agentLinks: { some: { agentUserId: userId, status: 'active' } } } },
+      select: { id: true },
+    }),
+  ]);
+  const ids = new Set(assigned.map((a) => a.propertyId));
+  for (const p of viaOwners) ids.add(p.id);
+  return [...ids].map((propertyId) => ({ propertyId }));
 }

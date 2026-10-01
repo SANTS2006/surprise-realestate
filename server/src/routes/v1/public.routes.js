@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { validate } from '../../middleware/validate.js';
 import { authRateLimiter } from '../../middleware/security.js';
+import { resolvePublicOrg } from '../../middleware/resolvePublicOrg.js';
 import * as publicController from '../../controllers/public.controller.js';
 import {
   listPublicListingsSchema, publicListingIdParamSchema, listingInquirySchema, generalContactSchema,
@@ -15,14 +16,22 @@ import {
 // since there is no principal to check one against.
 export const publicRouter = Router();
 
-publicRouter.get('/listings', validate(listPublicListingsSchema), publicController.listListings);
-publicRouter.get('/listings/filter-options', publicController.getFilterOptions);
-publicRouter.get('/listings/:id', validate(publicListingIdParamSchema), publicController.getListing);
-publicRouter.get('/agents', publicController.getAgents);
-publicRouter.get('/stats', publicController.getStats);
+// One router, mounted twice: under /orgs/:orgSlug (the way every site should
+// use it) and bare (legacy, via PRIMARY_ORGANIZATION_ID).
+const companyRouter = Router({ mergeParams: true });
+companyRouter.use(resolvePublicOrg);
+
+companyRouter.get('/listings', validate(listPublicListingsSchema), publicController.listListings);
+companyRouter.get('/listings/filter-options', publicController.getFilterOptions);
+companyRouter.get('/listings/:id', validate(publicListingIdParamSchema), publicController.getListing);
+companyRouter.get('/agents', publicController.getAgents);
+companyRouter.get('/stats', publicController.getStats);
 
 // `authRateLimiter` isn't auth-specific in what it does (IP+email keyed
 // rate limiting) — reused here to stop the public site's forms being used
 // as a spam/email relay, the same way it stops login/reset brute-forcing.
-publicRouter.post('/listings/:id/inquiries', authRateLimiter(10), validate(listingInquirySchema), publicController.createListingInquiry);
-publicRouter.post('/contact', authRateLimiter(10), validate(generalContactSchema), publicController.createGeneralContact);
+companyRouter.post('/listings/:id/inquiries', authRateLimiter(10), validate(listingInquirySchema), publicController.createListingInquiry);
+companyRouter.post('/contact', authRateLimiter(10), validate(generalContactSchema), publicController.createGeneralContact);
+
+publicRouter.use('/orgs/:orgSlug', companyRouter);
+publicRouter.use('/', companyRouter);

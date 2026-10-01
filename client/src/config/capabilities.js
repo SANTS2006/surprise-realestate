@@ -10,12 +10,12 @@
 // (property_manager was removed as redundant with it — see
 // docs/security/authorization.md). Every "manage" capability below that
 // used to list both now lists only `agent`.
-export const CAN_CREATE_PROPERTIES = ['administrator', 'agent'];
-export const CAN_UPDATE_PROPERTIES = ['administrator', 'agent'];
+export const CAN_CREATE_PROPERTIES = ['administrator', 'agent', 'owner'];
+export const CAN_UPDATE_PROPERTIES = ['administrator', 'agent', 'owner'];
 export const CAN_DELETE_PROPERTIES = ['administrator'];
 
-export const CAN_MANAGE_BUILDINGS = ['administrator', 'agent'];
-export const CAN_MANAGE_UNITS = ['administrator', 'agent'];
+export const CAN_MANAGE_BUILDINGS = ['administrator', 'agent', 'owner'];
+export const CAN_MANAGE_UNITS = ['administrator', 'agent', 'owner'];
 
 export const CAN_MANAGE_TENANTS = ['administrator', 'agent'];
 // owner has no owners:* permission at all (they only ever see their own
@@ -27,15 +27,17 @@ export const CAN_MANAGE_LEASES = ['administrator', 'agent'];
 // Every mutation across invoices/payments/expenses (create, update, send,
 // void, refund, approve/reject/mark-paid, categories) maps to the same two
 // roles in the default templates — agent and owner are both read-only here.
-export const CAN_MANAGE_FINANCE = ['administrator', 'accountant'];
+// Owners and agents have full finance access for their own portfolios (the
+// server scopes every list and write to the properties they may reach).
+export const CAN_MANAGE_FINANCE = ['administrator', 'accountant', 'owner', 'agent'];
 
 // Work orders / vendors / inspections, and updating (review/assign/cancel)
 // a maintenance request, are all granted to the same roles.
-export const CAN_MANAGE_OPERATIONS = ['administrator', 'agent', 'maintenance_manager'];
+export const CAN_MANAGE_OPERATIONS = ['administrator', 'agent', 'owner', 'maintenance_manager'];
 // Creating a maintenance request is additionally open to the tenant who's
 // reporting the issue (self-scoped to their own unit) — see
 // maintenanceRequest.service.js.
-export const CAN_CREATE_MAINTENANCE = ['administrator', 'agent', 'maintenance_manager', 'tenant'];
+export const CAN_CREATE_MAINTENANCE = ['administrator', 'agent', 'owner', 'maintenance_manager', 'tenant'];
 
 // users:invite/update/change-role and roles are administrator-only in the
 // default templates — 'users'/'roles' resources appear in no other role's
@@ -89,7 +91,7 @@ export const CAN_VIEW_ALL_NOTIFICATIONS = ['administrator'];
 // for their property (plus administrator, org-wide) read. See
 // tenantMessage.service.js; not a standard resource CRUD split.
 export const CAN_SEND_TENANT_MESSAGE = ['tenant'];
-export const CAN_VIEW_TENANT_MESSAGES = ['administrator', 'agent'];
+export const CAN_VIEW_TENANT_MESSAGES = ['administrator', 'agent', 'owner'];
 
 // referrals:approve/mark-paid — setting a bonus amount and paying it out
 // are deliberate financial actions, only administrator/accountant hold

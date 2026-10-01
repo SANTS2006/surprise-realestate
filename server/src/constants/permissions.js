@@ -12,7 +12,7 @@ const RESOURCES = [
   'owners', 'tenants', 'leases', 'invoices', 'payments', 'expenses',
   'vendors', 'maintenance', 'work-orders', 'inspections', 'documents',
   'notifications', 'reports', 'audit-logs', 'audit-remarks', 'settings',
-  'referrals',
+  'referrals', 'rentals', 'agents',
 ];
 
 const STANDARD_ACTIONS = ['read', 'create', 'update', 'delete'];
@@ -50,6 +50,7 @@ export const PERMISSIONS = [
 const ALL = PERMISSIONS.map((p) => p.name);
 const readOnly = (resources) => resources.map((r) => `${r}:read`);
 const readWrite = (resources) => resources.flatMap((r) => [`${r}:read`, `${r}:create`, `${r}:update`]);
+const fullCrud = (resources) => resources.flatMap((r) => [`${r}:read`, `${r}:create`, `${r}:update`, `${r}:delete`]);
 
 // Default role → permission-name mapping seeded for every new organization.
 // Organization admins can edit/create additional roles later (Phase 5 UI);
@@ -86,19 +87,35 @@ export const DEFAULT_ROLE_TEMPLATES = {
   // self-scopes that regardless of permission) — they have no reason to
   // browse other owners.
   owner: {
-    description: 'Read-only access to their own properties and financial reports.',
-    permissions: [...readOnly(['properties', 'buildings', 'units', 'tenants', 'leases', 'invoices', 'payments', 'expenses', 'reports', 'documents', 'maintenance']), 'documents:download'],
+    description: 'Manages their own properties, finances, maintenance and agents.',
+    permissions: [
+      // Add and edit their own properties, buildings and units.
+      ...readWrite(['properties', 'buildings', 'units']),
+      // Everyone renting from them, and the leases/documents around that.
+      ...readOnly(['tenants', 'leases', 'referrals', 'owners', 'rentals']),
+      // The full finance module for their portfolio.
+      ...fullCrud(['invoices', 'payments', 'expenses']),
+      ...readWrite(['reports']),
+      // Maintenance, with delete.
+      ...fullCrud(['maintenance', 'work-orders', 'vendors']),
+      ...readWrite(['inspections', 'documents', 'notifications']),
+      // Their agents: see, add, update, deactivate, delete.
+      ...fullCrud(['agents']),
+      'documents:download', 'expenses:approve', 'tenant-messages:read',
+    ],
   },
   // The one assignment-scoped "manages specific properties" role (formerly
   // split with property_manager, which was removed as redundant — this
   // absorbed its full permission set). Scoped via PropertyAssignment, not
   // ownership — see ASSIGNMENT_SCOPED_ROLES in resourceAccess.service.js.
   agent: {
-    description: 'Manages assigned properties, units, tenants, and leases.',
+    description: 'Manages the properties and tenants of the owners they are linked to.',
     permissions: [
-      ...readWrite(['properties', 'buildings', 'units', 'tenants', 'leases', 'maintenance', 'work-orders', 'inspections', 'vendors', 'documents', 'notifications']),
-      ...readOnly(['invoices', 'payments', 'expenses', 'owners', 'reports']),
-      'leases:terminate', 'leases:renew', 'documents:download', 'tenant-messages:read',
+      ...readWrite(['properties', 'buildings', 'units', 'tenants', 'leases', 'work-orders', 'inspections', 'vendors', 'documents', 'notifications', 'reports']),
+      // Full finance and maintenance access for their owners' portfolios.
+      ...fullCrud(['invoices', 'payments', 'expenses', 'maintenance']),
+      ...readOnly(['owners', 'referrals', 'rentals', 'agents']),
+      'leases:terminate', 'leases:renew', 'documents:download', 'tenant-messages:read', 'expenses:approve',
     ],
   },
   tenant: {
@@ -106,6 +123,8 @@ export const DEFAULT_ROLE_TEMPLATES = {
     permissions: [
       ...readOnly(['tenants', 'leases', 'invoices', 'payments', 'documents', 'referrals']),
       'maintenance:read', 'maintenance:create', 'documents:download', 'tenant-messages:create',
+      // See and register rentals; see the owners/agents they are registered to.
+      'rentals:read', 'rentals:create', 'owners:read', 'agents:read',
     ],
   },
   auditor: {
