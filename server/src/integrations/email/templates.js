@@ -141,21 +141,22 @@ export function verificationEmail(token, org) {
   };
 }
 
-export function inviteEmail(token, { org, invitedByName }) {
+export function inviteEmail(token, { org, invitedByName, roleLabel }) {
   const url = orgUrl(org, `/set-password?token=${token}`);
   const organizationName = escapeHtml(org.name);
   const inviter = escapeHtml(invitedByName);
   return {
-    subject: `You've been invited to join ${org.name}`,
-    text: `${invitedByName} invited you to join ${org.name}. Set your password: ${url} (expires in 7 days)`,
+    subject: roleLabel ? `You've been invited to join ${org.name} as ${roleLabel}` : `You've been invited to join ${org.name}`,
+    text: `${invitedByName} invited you to join ${org.name}${roleLabel ? ` as ${roleLabel}` : ''}. Set your password to activate your account: ${url} (expires in 7 days)`,
     html: renderEmail({
       org,
       headerLabel: 'Invitation',
       eyebrow: "You're invited",
       heading: `Join ${organizationName}`,
-      paragraphs: [`<strong>${inviter}</strong> invited you to join <strong>${organizationName}</strong>.`],
+      paragraphs: [`<strong>${inviter}</strong> invited you to join <strong>${organizationName}</strong>${roleLabel ? ` as ${escapeHtml(roleLabel)}` : ''}. Click the button below, choose your password, and your account is activated.`],
       detailsRows: [
         { label: 'Organization', value: organizationName },
+        ...(roleLabel ? [{ label: 'Your role', value: escapeHtml(roleLabel) }] : []),
         { label: 'Invited by', value: inviter },
         { label: 'Link expires', value: '7 days from now', valueColor: '#DC2626' },
       ],

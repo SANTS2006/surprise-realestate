@@ -13,6 +13,7 @@ import {
 } from '../auth/mfa.js';
 import { sendMail } from '../integrations/email/mailer.js';
 import { findOrganizationById } from '../repositories/organization.repository.js';
+import { getEffectivePermissions } from './authorization.service.js';
 import { verificationEmail, passwordResetEmail } from '../integrations/email/templates.js';
 import {
   findUserById, findUserByEmailGlobal, findUserByIdUnscoped, createUser, setPasswordHash,
@@ -69,7 +70,7 @@ export async function getCurrentUser(userId, organizationId) {
   const user = await findUserById(userId, organizationId);
   if (!user) throw AppError.unauthorized('Your session is no longer valid. Please sign in again.');
   const roles = await loadRoleNames(user.id);
-  return serializeUser(user, roles);
+  return serializeUser(user, roles, await getEffectivePermissions(user.organizationId, roles));
 }
 
 // ── Registration ────────────────────────────────────────────────────────
@@ -243,7 +244,7 @@ export async function login({ email, password }, organization, req) {
   const roles = await loadRoleNames(user.id);
   await audit({ organizationId: user.organizationId, userId: user.id, action: 'auth.login_succeeded', entityType: 'user', entityId: user.id, req });
 
-  return { user: serializeUser(user, roles) };
+  return { user: serializeUser(user, roles, await getEffectivePermissions(user.organizationId, roles)) };
 }
 
 export async function completeMfaChallenge({ mfaToken, code }, req) {
@@ -269,7 +270,7 @@ export async function completeMfaChallenge({ mfaToken, code }, req) {
   const roles = await loadRoleNames(user.id);
   await audit({ organizationId: user.organizationId, userId: user.id, action: 'auth.mfa_succeeded', entityType: 'user', entityId: user.id, req });
 
-  return { user: serializeUser(user, roles), usedRecoveryCode: Boolean(usedRecoveryCode) };
+  return { user: serializeUser(user, roles, await getEffectivePermissions(user.organizationId, roles)), usedRecoveryCode: Boolean(usedRecoveryCode) };
 }
 
 // Regenerates the session ID before writing principal data — prevents

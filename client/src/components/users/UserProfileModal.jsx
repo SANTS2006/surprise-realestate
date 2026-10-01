@@ -7,11 +7,12 @@ import { Alert } from '../ui/Alert.jsx';
 import { ConfirmDialog } from '../ui/ConfirmDialog.jsx';
 import { UserAvatar } from '../ui/UserAvatar.jsx';
 import { usersApi } from '../../api/users.js';
+import { hasPermission } from '../../config/capabilities.js';
 
 const STATUS_TONE = { pending: 'warning', active: 'success', inactive: 'neutral', locked: 'danger' };
 const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'long' });
 
-export function UserProfileModal({ open, onClose, user, roles, canManage, isSelf, onChanged, onDeleted }) {
+export function UserProfileModal({ open, onClose, user, roles, canManage, canDelete = false, isSelf, onChanged, onDeleted }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
   const [roleError, setRoleError] = useState(null);
@@ -96,6 +97,7 @@ export function UserProfileModal({ open, onClose, user, roles, canManage, isSelf
 
       {canManage && !isSelf && (
         <div className="mt-6 flex flex-col gap-4 border-t border-slate-200 pt-4 dark:border-slate-800">
+          {hasPermission('users:change-role') && (
           <div>
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="user-role-select">Role</label>
             <select
@@ -109,6 +111,7 @@ export function UserProfileModal({ open, onClose, user, roles, canManage, isSelf
             </select>
             {roleError && <Alert variant="error" className="mt-2">{roleError}</Alert>}
           </div>
+          )}
 
           {['active', 'inactive', 'locked'].includes(user.status) && (
             <div>
@@ -120,13 +123,15 @@ export function UserProfileModal({ open, onClose, user, roles, canManage, isSelf
             </div>
           )}
 
-          <div className="border-t border-slate-200 pt-4 dark:border-slate-800">
-            {deleteError && <Alert variant="error" className="mb-2">{deleteError}</Alert>}
-            <Button variant="danger" onClick={() => setConfirmDelete(true)} className="w-full">
-              <Trash2 size={15} aria-hidden="true" />
-              Delete user permanently
-            </Button>
-          </div>
+          {canDelete && (
+            <div className="border-t border-slate-200 pt-4 dark:border-slate-800">
+              {deleteError && <Alert variant="error" className="mb-2">{deleteError}</Alert>}
+              <Button variant="danger" onClick={() => setConfirmDelete(true)} className="w-full">
+                <Trash2 size={15} aria-hidden="true" />
+                Delete user permanently
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

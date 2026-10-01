@@ -20,4 +20,6 @@ export const propertyFormSchema = z.object({
   latitude: optionalNumber(z.coerce.number().min(-90).max(90)),
   longitude: optionalNumber(z.coerce.number().min(-180).max(180)),
   yearBuilt: optionalNumber(z.coerce.number().int().min(1800).max(2100)),
+  // Chosen by administrators and agents; owners never pick (their own).
+  ownerId: optionalString(z.string().uuid('Choose an owner from the list.')),
 });

@@ -25,12 +25,14 @@ import { rolesApi } from '../../api/roles.js';
 import { permissionsApi } from '../../api/permissions.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useStatusCounts } from '../../hooks/useStatusCounts.js';
-import { CAN_MANAGE_USERS, CAN_MANAGE_ROLES, canAny } from '../../config/capabilities.js';
+import { CAN_MANAGE_USERS, CAN_MANAGE_ROLES, CAN_INVITE_USERS, CAN_DELETE_USERS, canAny } from '../../config/capabilities.js';
 
 const USER_STATUS_LIST = ['active', 'pending', 'locked'];
 
 function UsersTab({ canManage }) {
   const { user: me } = useAuth();
+  const canInvite = canAny(me?.roles ?? [], CAN_INVITE_USERS);
+  const canDelete = canAny(me?.roles ?? [], CAN_DELETE_USERS);
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [meta, setMeta] = useState({ page: 1, pageSize: 20, total: 0, totalPages: 1 });
@@ -69,7 +71,7 @@ function UsersTab({ canManage }) {
         eyebrow="User Management"
         title="Users"
         description="Manage system users, account access, roles and activity from one place."
-        action={canManage && (
+        action={canInvite && (
           <Button onClick={() => setInviteOpen(true)}>
             <Plus size={16} aria-hidden="true" />
             Invite user
@@ -131,6 +133,7 @@ function UsersTab({ canManage }) {
         user={profileUser}
         roles={roles}
         canManage={canManage}
+        canDelete={canDelete}
         isSelf={profileUser?.id === me?.id}
         onChanged={handleUserChanged}
         onDeleted={() => { setProfileUser(null); load(); }}

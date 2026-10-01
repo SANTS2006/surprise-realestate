@@ -5,7 +5,8 @@ import {
   countOwnersByOrganization, updateOwner, setOwnerStatus, countOwnerPropertiesInScope,
 } from '../repositories/owner.repository.js';
 import { countPropertiesGroupedByOwner } from '../repositories/property.repository.js';
-import { findUserById } from '../repositories/user.repository.js';
+import { findUserById, findUserByEmailGlobal } from '../repositories/user.repository.js';
+import { inviteUser } from './user.service.js';
 import { getCoverImageUrls } from './document.service.js';
 import { getRestrictedScope } from './resourceAccess.service.js';
 import { audit } from './audit.service.js';
@@ -77,6 +78,24 @@ export async function listOwners(organizationId, actingUser, { page, pageSize, s
   return { owners: enriched, meta: buildPaginationMeta({ page, pageSize, total }) };
 }
 
+// Names only, for dropdowns (e.g. "which owner does this property belong to"):
+// the same people the caller may see in the full list — everyone for an
+// administrator, the owners an agent works for, a tenant's own landlords, an
+// owner's own record — without the photos and property counts that make the
+// full list slow to build.
+export async function listOwnerOptions(organizationId, actingUser) {
+  if (actingUser.roles.includes('owner') && !actingUser.roles.includes('administrator')) {
+    const own = await findOwnerByUserId(actingUser.id, organizationId);
+    return own ? [{ id: own.id, name: own.name }] : [];
+  }
+  const scope = isTenantOnly(actingUser)
+    ? { propertyIds: await tenantPropertyIds(actingUser, organizationId) }
+    : await getRestrictedScope(actingUser, organizationId);
+  const agentUserId = actingUser.roles.includes('agent') ? actingUser.id : undefined;
+  const owners = await findOwnersByOrganization(organizationId, { skip: 0, take: 500, status: 'active', propertyIds: scope.propertyIds, agentUserId });
+  return owners.map((o) => ({ id: o.id, name: o.name }));
+}
+
 export async function getOwner(id, organizationId, actingUser) {
   const owner = await findOwnerById(id, organizationId);
   if (!owner) throw AppError.notFound('Owner not found.');
@@ -96,15 +115,33 @@ export async function getOwner(id, organizationId, actingUser) {
   return serializeOwner(owner);
 }
 
-export async function createOwnerRecord(organizationId, body, actingUser, req) {
-  if (body.userId) {
-    const user = await findUserById(body.userId, organizationId);
+// Adding an owner creates their login too and emails them an invitation (in
+// the company's own branding) whose link opens a page to choose a password
+// and activate the account — exactly like adding an agent. Until they accept
+// they appear in the users list as pending. Passing an existing `userId`
+// links that account instead and sends nothing.
+export async function createOwnerRecord(organizationId, body, actingUser, req, invitedBy) {
+  let userId = body.userId ?? null;
+  let invited = false;
+
+  if (userId) {
+    const user = await findUserById(userId, organizationId);
     if (!user) throw AppError.badRequest('The specified user does not exist in this organization.');
+  } else {
+    if (!body.email) throw AppError.badRequest('An email address is needed to invite the owner.');
+    if (await findUserByEmailGlobal(body.email)) throw AppError.conflict('A user with this email already exists.');
+    const [firstName, ...rest] = body.name.trim().split(/\s+/);
+    const created = await inviteUser(
+      { organizationId, invitedBy, firstName, lastName: rest.join(' ') || '-', email: body.email, roleName: 'owner' },
+      req,
+    );
+    userId = created.id;
+    invited = true;
   }
 
   const owner = await createOwner({
     organizationId,
-    userId: body.userId ?? null,
+    userId,
     name: body.name,
     email: body.email ?? null,
     phone: body.phone ?? null,
@@ -112,7 +149,7 @@ export async function createOwnerRecord(organizationId, body, actingUser, req) {
   });
 
   await audit({ organizationId, userId: actingUser.id, action: 'owner.created', entityType: 'owner', entityId: owner.id, newValues: { name: owner.name }, req });
-  return serializeOwner(owner);
+  return { ...serializeOwner(owner), invited };
 }
 
 export async function updateOwnerRecord(id, organizationId, body, actingUser, req) {

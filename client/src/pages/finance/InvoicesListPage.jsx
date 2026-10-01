@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, Receipt, Send, Ban, Pencil, Wallet, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { hasPermission } from '../../config/capabilities.js';
+import { Plus, Receipt, Send, Ban, Pencil, Wallet, CheckCircle2, AlertTriangle, Trash2 } from 'lucide-react';
 import { Card, CardBody } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { SelectField } from '../../components/ui/Input.jsx';
@@ -19,7 +20,7 @@ import { RecordPaymentModal } from '../../components/finance/RecordPaymentModal.
 import { invoicesApi } from '../../api/invoices.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useStatusCounts } from '../../hooks/useStatusCounts.js';
-import { CAN_MANAGE_FINANCE, CAN_UPLOAD_DOCUMENTS, CAN_DELETE_DOCUMENTS, canAny } from '../../config/capabilities.js';
+import { CAN_MANAGE_INVOICES, CAN_UPLOAD_DOCUMENTS, CAN_DELETE_DOCUMENTS, canAny } from '../../config/capabilities.js';
 import { formatCurrency } from '../../utils/currency.js';
 
 const STATUS_TONE = { draft: 'neutral', sent: 'brand', partially_paid: 'warning', paid: 'success', overdue: 'danger', void: 'neutral' };
@@ -29,7 +30,7 @@ const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' });
 export default function InvoicesListPage() {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
-  const canManage = canAny(roles, CAN_MANAGE_FINANCE);
+  const canManage = canAny(roles, CAN_MANAGE_INVOICES);
   const canUploadDocs = canAny(roles, CAN_UPLOAD_DOCUMENTS);
   const canDeleteDocs = canAny(roles, CAN_DELETE_DOCUMENTS);
 
@@ -45,6 +46,7 @@ export default function InvoicesListPage() {
   const [voidInvoiceState, setVoidInvoiceState] = useState(null);
   const [payInvoice, setPayInvoice] = useState(null);
   const [sendInvoiceState, setSendInvoiceState] = useState(null);
+  const [deleteInvoice, setDeleteInvoice] = useState(null);
   const statusCounts = useStatusCounts(invoicesApi.list, STATUS_LIST, [meta.total]);
 
   const load = useCallback(() => {
@@ -144,7 +146,13 @@ export default function InvoicesListPage() {
                         />
                         {canManage && (
                           <>
-                            {inv.status === 'draft' && (
+                            {inv.status === 'draft' && hasPermission('invoices:delete') && (
+                              <Button variant="danger" size="sm" onClick={() => setDeleteInvoice(inv)} aria-label="Delete invoice">
+                                <Trash2 size={14} aria-hidden="true" />
+                                Delete
+                              </Button>
+                            )}
+                            {inv.status === 'draft' && hasPermission('invoices:update') && (
                               <>
                                 <Button variant="secondary" size="sm" onClick={() => setEditInvoice(inv)}>
                                   <Pencil size={14} aria-hidden="true" />
@@ -156,13 +164,13 @@ export default function InvoicesListPage() {
                                 </Button>
                               </>
                             )}
-                            {['sent', 'partially_paid', 'overdue'].includes(inv.status) && Number(inv.balance) > 0 && (
+                            {['sent', 'partially_paid', 'overdue'].includes(inv.status) && Number(inv.balance) > 0 && hasPermission('payments:create') && (
                               <Button size="sm" onClick={() => setPayInvoice(inv)}>
                                 <Wallet size={14} aria-hidden="true" />
                                 Record payment
                               </Button>
                             )}
-                            {inv.status !== 'void' && Number(inv.amountPaid) === 0 && (
+                            {inv.status !== 'void' && Number(inv.amountPaid) === 0 && hasPermission('invoices:void') && (
                               <Button variant="danger" size="sm" onClick={() => setVoidInvoiceState(inv)}>
                                 <Ban size={14} aria-hidden="true" />
                                 Void
@@ -185,6 +193,14 @@ export default function InvoicesListPage() {
       <EditInvoiceModal open={Boolean(editInvoice)} onClose={() => setEditInvoice(null)} onSaved={load} invoice={editInvoice} />
       <VoidInvoiceModal open={Boolean(voidInvoiceState)} onClose={() => setVoidInvoiceState(null)} onSaved={load} invoice={voidInvoiceState} />
       <RecordPaymentModal open={Boolean(payInvoice)} onClose={() => setPayInvoice(null)} onSaved={load} presetInvoice={payInvoice} />
+      <ConfirmDialog
+        open={Boolean(deleteInvoice)}
+        onClose={() => setDeleteInvoice(null)}
+        onConfirm={async () => { await invoicesApi.remove(deleteInvoice.id); load(); }}
+        title="Delete draft invoice?"
+        description={deleteInvoice ? `Permanently delete draft invoice ${deleteInvoice.invoiceNumber}. This cannot be undone.` : ''}
+        confirmLabel="Delete"
+      />
       <ConfirmDialog
         open={Boolean(sendInvoiceState)}
         onClose={() => setSendInvoiceState(null)}

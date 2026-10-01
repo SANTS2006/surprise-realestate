@@ -3,7 +3,7 @@ import { ArrowUpRight, LayoutDashboard } from 'lucide-react';
 import { Button } from '../components/ui/Button.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useBranding } from '../contexts/BrandingContext.jsx';
-import { NAV_SECTIONS, isNavItemVisible } from '../config/navigation.js';
+import { NAV_SECTIONS, isNavItemVisible, visibleChildren } from '../config/navigation.js';
 
 function greeting() {
   const hour = new Date().getHours();
@@ -37,7 +37,7 @@ export default function HomePage() {
 
   const quickLinks = NAV_SECTIONS.filter((item) => item.to !== '/home' && isNavItemVisible(item, roles)).flatMap((item) =>
     item.children
-      ? item.children.map((child) => ({ to: child.to, icon: item.icon, label: child.label }))
+      ? visibleChildren(item, roles).map((child) => ({ to: child.to, icon: item.icon, label: child.label }))
       : [{ to: item.to, icon: item.icon, label: item.label }]
   );
 

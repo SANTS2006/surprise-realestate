@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '../ui/Modal.jsx';
-import { Field, TextareaField } from '../ui/Input.jsx';
+import { Field, SelectField, TextareaField } from '../ui/Input.jsx';
 import { Button } from '../ui/Button.jsx';
 import { Alert } from '../ui/Alert.jsx';
 import { MediaGallery } from '../media/MediaGallery.jsx';
 import { PendingMediaPicker } from '../media/PendingMediaPicker.jsx';
 import { propertiesApi } from '../../api/properties.js';
+import { ownersApi } from '../../api/owners.js';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import { documentsApi } from '../../api/documents.js';
 import { propertyFormSchema } from '../../validations/property.js';
 
@@ -17,7 +19,20 @@ export function PropertyFormModal({ open, onClose, onSaved, property }) {
   const isEdit = Boolean(property);
   const [serverError, setServerError] = useState(null);
   const [pendingFiles, setPendingFiles] = useState([]);
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(propertyFormSchema) });
+  const { hasRole } = useAuth();
+  // Administrators pick from every owner in the system; agents pick from the
+  // owners they are linked to (the server only returns those); an owner adding
+  // a property never picks — it is tagged to them automatically when saved.
+  const pickOwner = !isEdit && (hasRole('administrator') || hasRole('agent'));
+  const ownerRequired = pickOwner && !hasRole('administrator');
+  const [owners, setOwners] = useState(null);
+  const { register, handleSubmit, reset, setError, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(propertyFormSchema) });
+
+  useEffect(() => {
+    if (!open || !pickOwner) return;
+    setOwners(null);
+    ownersApi.options().then((res) => setOwners(res.data)).catch(() => setOwners([]));
+  }, [open, pickOwner]);
 
   useEffect(() => {
     if (!open) return;
@@ -36,7 +51,7 @@ export function PropertyFormModal({ open, onClose, onSaved, property }) {
             longitude: property.longitude ?? '',
             yearBuilt: property.yearBuilt ?? '',
           }
-        : { propertyCode: '', name: '', propertyType: '', description: '', address: '', city: '', region: '', country: '', latitude: '', longitude: '', yearBuilt: '' }
+        : { propertyCode: '', name: '', propertyType: '', description: '', address: '', city: '', region: '', country: '', latitude: '', longitude: '', yearBuilt: '', ownerId: '' }
     );
     setPendingFiles([]);
     setServerError(null);
@@ -44,12 +59,17 @@ export function PropertyFormModal({ open, onClose, onSaved, property }) {
 
   const onSubmit = async (values) => {
     setServerError(null);
+    if (ownerRequired && !values.ownerId) {
+      setError('ownerId', { message: 'Choose which owner this property belongs to.' });
+      return;
+    }
     try {
       if (isEdit) {
-        const { propertyCode, ...updatable } = values;
+        // eslint-disable-next-line no-unused-vars
+        const { propertyCode, ownerId, ...updatable } = values;
         await propertiesApi.update(property.id, updatable);
       } else {
-        const created = await propertiesApi.create(values);
+        const created = await propertiesApi.create({ ...values, ownerId: pickOwner ? values.ownerId : undefined });
         for (const file of pendingFiles) {
           await documentsApi.upload('property', created.data.id, file);
         }
@@ -72,6 +92,21 @@ export function PropertyFormModal({ open, onClose, onSaved, property }) {
             {PROPERTY_TYPES.map((t) => <option key={t} value={t} />)}
           </datalist>
         </div>
+        {pickOwner && (
+          <SelectField
+            label="Owner"
+            required={ownerRequired}
+            hint={owners && owners.length === 0
+              ? (ownerRequired ? 'You are not linked to any owner yet. Ask an owner or administrator to add you.' : 'No owners are registered yet.')
+              : (ownerRequired ? 'The owner this property belongs to — one of the owners you work for.' : 'Optional — choose who owns this property.')}
+            error={errors.ownerId?.message}
+            disabled={owners === null}
+            {...register('ownerId')}
+          >
+            <option value="">{owners === null ? 'Loading owners…' : ownerRequired ? 'Select an owner…' : 'No owner yet'}</option>
+            {(owners ?? []).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </SelectField>
+        )}
         <Field label="Property name" required error={errors.name?.message} {...register('name')} />
         <TextareaField label="Description" error={errors.description?.message} {...register('description')} />
         <Field label="Address" required error={errors.address?.message} {...register('address')} />

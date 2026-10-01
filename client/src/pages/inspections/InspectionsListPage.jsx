@@ -16,13 +16,13 @@ import { inspectionsApi } from '../../api/inspections.js';
 import { propertiesApi } from '../../api/properties.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useStatusCounts } from '../../hooks/useStatusCounts.js';
-import { CAN_MANAGE_OPERATIONS, canAny } from '../../config/capabilities.js';
+import { CAN_MANAGE_INSPECTIONS, canAny } from '../../config/capabilities.js';
 
 const STATUS_LIST = ['scheduled', 'in_progress', 'completed'];
 
 export default function InspectionsListPage() {
   const { user } = useAuth();
-  const canManage = canAny(user?.roles ?? [], CAN_MANAGE_OPERATIONS);
+  const canManage = canAny(user?.roles ?? [], CAN_MANAGE_INSPECTIONS);
 
   const [inspections, setInspections] = useState([]);
   const [propertyNames, setPropertyNames] = useState({});

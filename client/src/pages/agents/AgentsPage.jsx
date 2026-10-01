@@ -125,7 +125,7 @@ export default function AgentsPage() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    if (isAdmin) ownersApi.list({ pageSize: 100 }).then((res) => setOwners(res.data)).catch(() => {});
+    if (isAdmin) ownersApi.options().then((res) => setOwners(res.data)).catch(() => {});
   }, [isAdmin]);
 
   const toggle = async (link) => {

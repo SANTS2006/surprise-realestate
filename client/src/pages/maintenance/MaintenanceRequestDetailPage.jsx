@@ -13,7 +13,7 @@ import { CompleteWorkOrderModal } from '../../components/maintenance/CompleteWor
 import { maintenanceApi } from '../../api/maintenance.js';
 import { workOrdersApi } from '../../api/workOrders.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { CAN_MANAGE_OPERATIONS, CAN_UPLOAD_DOCUMENTS, CAN_DELETE_DOCUMENTS, canAny } from '../../config/capabilities.js';
+import { CAN_MANAGE_MAINTENANCE, CAN_UPLOAD_DOCUMENTS, CAN_DELETE_DOCUMENTS, canAny } from '../../config/capabilities.js';
 import { formatCurrency } from '../../utils/currency.js';
 
 const STATUS_TONE = { open: 'warning', in_review: 'brand', assigned: 'brand', scheduled: 'brand', in_progress: 'warning', completed: 'success', cancelled: 'neutral' };
@@ -25,7 +25,7 @@ export default function MaintenanceRequestDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const roles = user?.roles ?? [];
-  const canManage = canAny(roles, CAN_MANAGE_OPERATIONS);
+  const canManage = canAny(roles, CAN_MANAGE_MAINTENANCE);
   const canUploadMedia = canAny(roles, CAN_UPLOAD_DOCUMENTS);
   const canDeleteMedia = canAny(roles, CAN_DELETE_DOCUMENTS);
 

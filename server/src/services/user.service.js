@@ -64,7 +64,7 @@ export async function inviteUser({ organizationId, invitedBy, firstName, lastNam
     return { user: created, rawToken: token };
   });
 
-  const { subject, html, text } = inviteEmail(rawToken, { org: invitedBy.organization, invitedByName: invitedBy.name });
+  const { subject, html, text } = inviteEmail(rawToken, { org: invitedBy.organization, invitedByName: invitedBy.name, roleLabel: `${/^[aeiou]/i.test(roleName) ? 'an' : 'a'} ${roleName.replace(/_/g, ' ')}` });
   await sendMail({ to: user.email, subject, html, text });
 
   await audit({

@@ -14,7 +14,7 @@ import { VendorFormModal } from '../../components/vendors/VendorFormModal.jsx';
 import { vendorsApi } from '../../api/vendors.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useStatusCounts } from '../../hooks/useStatusCounts.js';
-import { CAN_MANAGE_OPERATIONS, canAny } from '../../config/capabilities.js';
+import { CAN_MANAGE_VENDORS, canAny } from '../../config/capabilities.js';
 
 const STATUS_TONE = { active: 'success', inactive: 'neutral' };
 const STATUS_LIST = ['active', 'inactive'];
@@ -25,7 +25,7 @@ function initialsOf(v) {
 
 export default function VendorsListPage() {
   const { user } = useAuth();
-  const canManage = canAny(user?.roles ?? [], CAN_MANAGE_OPERATIONS);
+  const canManage = canAny(user?.roles ?? [], CAN_MANAGE_VENDORS);
 
   const [vendors, setVendors] = useState([]);
   const [meta, setMeta] = useState({ page: 1, pageSize: 20, total: 0, totalPages: 1 });

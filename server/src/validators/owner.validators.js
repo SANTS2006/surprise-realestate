@@ -15,8 +15,13 @@ export const listOwnersSchema = z.object({
 
 export const ownerIdParamSchema = z.object({ params: z.object(uuidParam('id')) });
 
+// An owner needs an email: they are sent an invitation to set their password
+// and activate their account.
 export const createOwnerSchema = z.object({
-  body: z.object({ ...ownerBody, name: ownerBody.name }).strict(),
+  body: z.object({
+    ...ownerBody,
+    email: z.string().trim().toLowerCase().email('Enter a valid email address.').max(254),
+  }).strict(),
 });
 
 export const updateOwnerSchema = z.object({

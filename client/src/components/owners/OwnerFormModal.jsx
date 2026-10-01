@@ -10,7 +10,7 @@ import { PendingMediaPicker } from '../media/PendingMediaPicker.jsx';
 import { ownersApi } from '../../api/owners.js';
 import { propertiesApi } from '../../api/properties.js';
 import { documentsApi } from '../../api/documents.js';
-import { ownerFormSchema } from '../../validations/owner.js';
+import { ownerFormSchema, ownerCreateSchema } from '../../validations/owner.js';
 
 // Ownership lives on Property.ownerId, not on Owner - so "attaching"
 // properties to a new/edited owner means patching each selected property's
@@ -86,7 +86,7 @@ export function OwnerFormModal({ open, onClose, onSaved, owner }) {
   const [properties, setProperties] = useState([]);
   const [selectedPropertyIds, setSelectedPropertyIds] = useState(new Set());
   const [liveOwner, setLiveOwner] = useState(owner);
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(ownerFormSchema) });
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(isEdit ? ownerFormSchema : ownerCreateSchema) });
 
   useEffect(() => {
     if (!open) return;
@@ -147,7 +147,14 @@ export function OwnerFormModal({ open, onClose, onSaved, owner }) {
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
         <Field label="Owner name" required error={errors.name?.message} {...register('name')} />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Email" type="email" error={errors.email?.message} {...register('email')} />
+          <Field
+            label="Email"
+            type="email"
+            required={!isEdit}
+            hint={isEdit ? undefined : 'We email them an invitation to set their password and activate their account.'}
+            error={errors.email?.message}
+            {...register('email')}
+          />
           <Field label="Phone" error={errors.phone?.message} {...register('phone')} />
         </div>
         <Field label="Address" error={errors.address?.message} {...register('address')} />
@@ -170,7 +177,7 @@ export function OwnerFormModal({ open, onClose, onSaved, owner }) {
 
         <div className="mt-2 flex justify-end gap-3">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" loading={isSubmitting}>{isEdit ? 'Save changes' : 'Create owner'}</Button>
+          <Button type="submit" loading={isSubmitting}>{isEdit ? 'Save changes' : 'Create owner & send invitation'}</Button>
         </div>
       </form>
     </Modal>

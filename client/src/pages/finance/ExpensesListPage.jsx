@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, Receipt, Check, X, DollarSign, Clock, CheckCircle2 } from 'lucide-react';
+import { hasPermission } from '../../config/capabilities.js';
+import { Plus, Receipt, Check, X, DollarSign, Clock, CheckCircle2, Trash2 } from 'lucide-react';
 import { Card, CardBody } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { SelectField } from '../../components/ui/Input.jsx';
@@ -16,7 +17,7 @@ import { ExpenseFormModal } from '../../components/finance/ExpenseFormModal.jsx'
 import { expensesApi } from '../../api/expenses.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useStatusCounts } from '../../hooks/useStatusCounts.js';
-import { CAN_MANAGE_FINANCE, CAN_UPLOAD_DOCUMENTS, CAN_DELETE_DOCUMENTS, canAny } from '../../config/capabilities.js';
+import { CAN_MANAGE_EXPENSES, CAN_UPLOAD_DOCUMENTS, CAN_DELETE_DOCUMENTS, canAny } from '../../config/capabilities.js';
 import { formatCurrency } from '../../utils/currency.js';
 
 const STATUS_TONE = { pending_approval: 'warning', approved: 'brand', rejected: 'danger', paid: 'success' };
@@ -26,7 +27,7 @@ const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' });
 export default function ExpensesListPage() {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
-  const canManage = canAny(roles, CAN_MANAGE_FINANCE);
+  const canManage = canAny(roles, CAN_MANAGE_EXPENSES);
   const canUploadDocs = canAny(roles, CAN_UPLOAD_DOCUMENTS);
   const canDeleteDocs = canAny(roles, CAN_DELETE_DOCUMENTS);
 
@@ -41,6 +42,7 @@ export default function ExpensesListPage() {
   const [approveExpense, setApproveExpense] = useState(null);
   const [rejectExpense, setRejectExpense] = useState(null);
   const [markPaidExpense, setMarkPaidExpense] = useState(null);
+  const [deleteExpense, setDeleteExpense] = useState(null);
   const statusCounts = useStatusCounts(expensesApi.list, STATUS_LIST, [meta.total]);
 
   const load = useCallback(() => {
@@ -130,7 +132,7 @@ export default function ExpensesListPage() {
                         />
                         {canManage && (
                           <>
-                            {exp.status === 'pending_approval' && (
+                            {exp.status === 'pending_approval' && hasPermission('expenses:approve') && (
                               <>
                                 <Button size="sm" onClick={() => setApproveExpense(exp)}>
                                   <Check size={14} aria-hidden="true" />
@@ -142,7 +144,13 @@ export default function ExpensesListPage() {
                                 </Button>
                               </>
                             )}
-                            {exp.status === 'approved' && (
+                            {['pending_approval', 'rejected'].includes(exp.status) && hasPermission('expenses:delete') && (
+                              <Button variant="danger" size="sm" onClick={() => setDeleteExpense(exp)} aria-label="Delete expense">
+                                <Trash2 size={14} aria-hidden="true" />
+                                Delete
+                              </Button>
+                            )}
+                            {exp.status === 'approved' && hasPermission('expenses:update') && (
                               <Button size="sm" onClick={() => setMarkPaidExpense(exp)}>
                                 <DollarSign size={14} aria-hidden="true" />
                                 Mark paid
@@ -178,6 +186,14 @@ export default function ExpensesListPage() {
         title="Reject expense?"
         description={rejectExpense ? `Reject the ${formatCurrency(rejectExpense.amount)} expense.` : ''}
         confirmLabel="Reject"
+      />
+      <ConfirmDialog
+        open={Boolean(deleteExpense)}
+        onClose={() => setDeleteExpense(null)}
+        onConfirm={async () => { await expensesApi.remove(deleteExpense.id); load(); }}
+        title="Delete expense?"
+        description={deleteExpense ? `Permanently delete the ${formatCurrency(deleteExpense.amount)} expense. This cannot be undone.` : ''}
+        confirmLabel="Delete"
       />
       <ConfirmDialog
         open={Boolean(markPaidExpense)}

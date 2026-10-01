@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { hasPermission } from '../../config/capabilities.js';
 import { Plus, FileText, Pencil, PlayCircle, RefreshCcw, XCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Card, CardBody } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -138,7 +139,7 @@ export default function LeasesListPage() {
                         />
                         {canManage && (
                           <>
-                            {lease.status === 'draft' && (
+                            {lease.status === 'draft' && hasPermission('leases:update') && (
                               <>
                                 <Button variant="secondary" size="sm" onClick={() => setEditLease(lease)}>
                                   <Pencil size={14} aria-hidden="true" />
@@ -152,18 +153,18 @@ export default function LeasesListPage() {
                             )}
                             {lease.status === 'active' && (
                               <>
-                                <Button variant="secondary" size="sm" onClick={() => setEditLease(lease)}>
+                                {hasPermission('leases:update') && <Button variant="secondary" size="sm" onClick={() => setEditLease(lease)}>
                                   <Pencil size={14} aria-hidden="true" />
                                   Edit
-                                </Button>
-                                <Button variant="secondary" size="sm" onClick={() => setRenewLease(lease)}>
+                                </Button>}
+                                {hasPermission('leases:renew') && <Button variant="secondary" size="sm" onClick={() => setRenewLease(lease)}>
                                   <RefreshCcw size={14} aria-hidden="true" />
                                   Renew
-                                </Button>
-                                <Button variant="danger" size="sm" onClick={() => setTerminateLease(lease)}>
+                                </Button>}
+                                {hasPermission('leases:terminate') && <Button variant="danger" size="sm" onClick={() => setTerminateLease(lease)}>
                                   <XCircle size={14} aria-hidden="true" />
                                   Terminate
-                                </Button>
+                                </Button>}
                               </>
                             )}
                           </>

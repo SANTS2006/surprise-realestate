@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { authApi } from '../api/auth.js';
 import { tenantAuthApi } from '../api/tenantAuth.js';
+import { setCurrentPermissions } from '../config/capabilities.js';
 
 const AuthContext = createContext(null);
 
@@ -48,6 +49,10 @@ export function AuthProvider({ children }) {
   // avatar (Topbar, Settings) is passed this shared counter so uploading a
   // new photo in one place updates all of them, not just the one that
   // triggered the upload.
+  // Every "can this person see this control?" check reads the signed-in
+  // user's permissions, so they must be in place before anything renders for
+  // that user (hence set during render, not in an effect).
+  setCurrentPermissions(user?.permissions);
   const [avatarVersion, setAvatarVersion] = useState(0);
   const bumpAvatarVersion = useCallback(() => setAvatarVersion((v) => v + 1), []);
 

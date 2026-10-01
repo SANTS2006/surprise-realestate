@@ -13,13 +13,13 @@ import { CompleteWorkOrderModal } from '../../components/maintenance/CompleteWor
 import { workOrdersApi } from '../../api/workOrders.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useStatusCounts } from '../../hooks/useStatusCounts.js';
-import { CAN_MANAGE_OPERATIONS, canAny } from '../../config/capabilities.js';
+import { CAN_MANAGE_WORK_ORDERS, canAny } from '../../config/capabilities.js';
 
 const STATUS_LIST = ['pending', 'in_progress', 'completed'];
 
 export default function WorkOrdersListPage() {
   const { user } = useAuth();
-  const canManage = canAny(user?.roles ?? [], CAN_MANAGE_OPERATIONS);
+  const canManage = canAny(user?.roles ?? [], CAN_MANAGE_WORK_ORDERS);
 
   const [workOrders, setWorkOrders] = useState([]);
   const [meta, setMeta] = useState({ page: 1, pageSize: 20, total: 0, totalPages: 1 });

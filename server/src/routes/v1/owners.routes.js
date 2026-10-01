@@ -13,6 +13,7 @@ export const ownersRouter = Router();
 ownersRouter.use(authenticate);
 
 ownersRouter.get('/', requirePermission('owners:read'), validate(listOwnersSchema), ownerController.list);
+ownersRouter.get('/options', requirePermission('owners:read'), ownerController.options);
 ownersRouter.get('/:id', requirePermission('owners:read'), validate(ownerIdParamSchema), ownerController.get);
 ownersRouter.post('/', csrfProtection, requirePermission('owners:create'), validate(createOwnerSchema), ownerController.create);
 ownersRouter.patch('/:id', csrfProtection, requirePermission('owners:update'), validate(updateOwnerSchema), ownerController.update);

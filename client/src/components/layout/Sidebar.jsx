@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { ChevronDown, X } from 'lucide-react';
 import clsx from 'clsx';
-import { NAV_SECTIONS, isNavItemVisible } from '../../config/navigation.js';
+import { NAV_SECTIONS, isNavItemVisible, visibleChildren } from '../../config/navigation.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useBranding } from '../../contexts/BrandingContext.jsx';
 import { useOptionalChat } from '../../contexts/ChatContext.jsx';
@@ -27,7 +27,7 @@ function NavItemLink({ to, children, onNavigate }) {
   );
 }
 
-function NavGroup({ item, onNavigate }) {
+function NavGroup({ item, children, onNavigate }) {
   const [open, setOpen] = useState(true);
   const Icon = item.icon;
   return (
@@ -51,7 +51,7 @@ function NavGroup({ item, onNavigate }) {
               open ? 'opacity-100 delay-100' : 'opacity-0'
             )}
           >
-            {item.children.map((child) => (
+            {children.map((child) => (
               <NavItemLink key={child.to} to={child.to} onNavigate={onNavigate}>
                 {child.label}
               </NavItemLink>
@@ -96,7 +96,7 @@ export function Sidebar({ mobileOpen, onClose }) {
     <nav aria-label="Primary" className="custom-scrollbar flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
       {visibleSections.map((item) =>
         item.children ? (
-          <NavGroup key={item.label} item={item} onNavigate={onNavigate} />
+          <NavGroup key={item.label} item={item} children={visibleChildren(item, roles)} onNavigate={onNavigate} />
         ) : (
           <NavItemLink key={item.to} to={item.to} onNavigate={onNavigate}>
             <span className="flex items-center gap-2.5">

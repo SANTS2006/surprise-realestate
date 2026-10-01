@@ -1,110 +1,81 @@
-// UX-only hints for which roles typically hold a given permission, derived
-// from server/src/constants/permissions.js's DEFAULT_ROLE_TEMPLATES. This
-// never grants or denies anything by itself — it only decides whether to
-// show a button that would otherwise just 403 immediately. The server's
-// requirePermission middleware is the actual authorization boundary, and an
-// organization can edit its roles' permissions later, so a mismatch here is
-// a UX rough edge, never a security gap.
+// Which controls a signed-in person gets to see.
 //
-// `agent` is the one assignment-scoped "manages specific properties" role
-// (property_manager was removed as redundant with it — see
-// docs/security/authorization.md). Every "manage" capability below that
-// used to list both now lists only `agent`.
-export const CAN_CREATE_PROPERTIES = ['administrator', 'agent', 'owner'];
-export const CAN_UPDATE_PROPERTIES = ['administrator', 'agent', 'owner'];
-export const CAN_DELETE_PROPERTIES = ['administrator'];
+// Each CAN_* below is a list of PERMISSIONS (resource:action, the same names
+// the server enforces) — a control is shown if the person holds ANY of them.
+// The permissions come from the server with the signed-in user (they are the
+// union of what the user's roles grant, including anything an administrator
+// customized), so a button appears exactly when its action would be allowed,
+// and is simply absent otherwise. This is a UX layer only: the server's
+// requirePermission/ownership checks remain the real boundary.
+//
+// A few capabilities are genuinely about the role rather than a permission
+// (e.g. the organization-wide notification feed); those list role names and
+// are checked against the person's roles instead.
 
-export const CAN_MANAGE_BUILDINGS = ['administrator', 'agent', 'owner'];
-export const CAN_MANAGE_UNITS = ['administrator', 'agent', 'owner'];
+let currentPermissions = new Set();
 
-export const CAN_MANAGE_TENANTS = ['administrator', 'agent'];
-// owner has no owners:* permission at all (they only ever see their own
-// record, self-scoped in owner.service.js) — administrator only here.
-export const CAN_MANAGE_OWNERS = ['administrator'];
+// Called by AuthProvider whenever the signed-in user changes.
+export function setCurrentPermissions(permissions) {
+  currentPermissions = new Set(permissions ?? []);
+}
 
-export const CAN_MANAGE_LEASES = ['administrator', 'agent'];
+export function hasPermission(...permissions) {
+  return permissions.some((p) => currentPermissions.has(p));
+}
 
-// Every mutation across invoices/payments/expenses (create, update, send,
-// void, refund, approve/reject/mark-paid, categories) maps to the same two
-// roles in the default templates — agent and owner are both read-only here.
-// Owners and agents have full finance access for their own portfolios (the
-// server scopes every list and write to the properties they may reach).
-export const CAN_MANAGE_FINANCE = ['administrator', 'accountant', 'owner', 'agent'];
+// `roles` is only used for entries that are role names (no ":" in them).
+export function canAny(roles, allowed) {
+  return allowed.some((entry) => (entry.includes(':') ? currentPermissions.has(entry) : roles.includes(entry)));
+}
 
-// Work orders / vendors / inspections, and updating (review/assign/cancel)
-// a maintenance request, are all granted to the same roles.
-export const CAN_MANAGE_OPERATIONS = ['administrator', 'agent', 'owner', 'maintenance_manager'];
-// Creating a maintenance request is additionally open to the tenant who's
-// reporting the issue (self-scoped to their own unit) — see
-// maintenanceRequest.service.js.
-export const CAN_CREATE_MAINTENANCE = ['administrator', 'agent', 'owner', 'maintenance_manager', 'tenant'];
+export const CAN_CREATE_PROPERTIES = ['properties:create'];
+export const CAN_UPDATE_PROPERTIES = ['properties:update'];
+export const CAN_DELETE_PROPERTIES = ['properties:delete'];
 
-// users:invite/update/change-role and roles are administrator-only in the
-// default templates — 'users'/'roles' resources appear in no other role's
-// readWrite/readOnly list except via administrator's ALL. auditor can read
-// (readOnly(RESOURCES) includes both), but never mutate.
-export const CAN_MANAGE_USERS = ['administrator'];
-export const CAN_VIEW_USERS = ['administrator', 'auditor'];
+export const CAN_MANAGE_BUILDINGS = ['buildings:create'];
+export const CAN_MANAGE_UNITS = ['units:create'];
 
-// roles:create/update/delete — same story as CAN_MANAGE_USERS, only
-// administrator holds these in the default templates. Kept as its own named
-// export (rather than reusing CAN_MANAGE_USERS) so the Roles/Permissions UI
-// reads as gated by its own concern, even though the role list is identical
-// today.
-export const CAN_MANAGE_ROLES = ['administrator'];
+export const CAN_MANAGE_TENANTS = ['tenants:create'];
+export const CAN_MANAGE_OWNERS = ['owners:create'];
+export const CAN_MANAGE_LEASES = ['leases:create'];
 
-// organizations:update is administrator-only; organizations:read also
-// includes auditor (readOnly(RESOURCES)) — the Settings page's
-// Organization tab is therefore visible to both but only editable by
-// administrator.
-export const CAN_MANAGE_ORGANIZATION = ['administrator'];
-export const CAN_VIEW_ORGANIZATION = ['administrator', 'auditor'];
+export const CAN_MANAGE_INVOICES = ['invoices:create'];
+export const CAN_MANAGE_PAYMENTS = ['payments:create'];
+export const CAN_MANAGE_EXPENSES = ['expenses:create'];
+export const CAN_MANAGE_FINANCE = ['invoices:create', 'payments:create', 'expenses:create'];
 
-// reports:read — agent and owner hold it despite being read-only/scoped
-// everywhere else; maintenance_manager and tenant do not have it at all.
-export const CAN_VIEW_REPORTS = ['administrator', 'agent', 'accountant', 'owner', 'auditor'];
+export const CAN_MANAGE_MAINTENANCE = ['maintenance:update'];
+export const CAN_MANAGE_WORK_ORDERS = ['work-orders:create'];
+export const CAN_MANAGE_VENDORS = ['vendors:create'];
+export const CAN_MANAGE_INSPECTIONS = ['inspections:create'];
+export const CAN_CREATE_MAINTENANCE = ['maintenance:create'];
 
-// documents:create — accountant now has it too (finance readWrite includes
-// documents, matching their need to attach receipts to invoices/payments/
-// expenses); owner/tenant/auditor remain read-only.
-export const CAN_UPLOAD_DOCUMENTS = ['administrator', 'agent', 'maintenance_manager', 'accountant'];
-// documents:delete — the readWrite() helper only grants read/create/update,
-// never delete, so only administrator (ALL permissions) can delete a file.
-export const CAN_DELETE_DOCUMENTS = ['administrator'];
+export const CAN_MANAGE_USERS = ['users:update'];
+export const CAN_INVITE_USERS = ['users:invite'];
+export const CAN_DELETE_USERS = ['users:delete'];
+export const CAN_VIEW_USERS = ['users:read'];
+export const CAN_MANAGE_ROLES = ['roles:create'];
 
-// audit-logs:read — administrator and auditor only, per RESOURCES-wide
-// readOnly() for auditor and ALL for administrator; no other role's
-// template mentions 'audit-logs' at all.
-export const CAN_VIEW_AUDIT_LOGS = ['administrator', 'auditor'];
+export const CAN_MANAGE_ORGANIZATION = ['organizations:update'];
+export const CAN_VIEW_ORGANIZATION = ['organizations:read'];
 
-// audit-remarks:create — the one deliberate write permission on an
-// otherwise read-only role (auditor); administrator has it too via ALL.
-export const CAN_CREATE_AUDIT_REMARKS = ['administrator', 'auditor'];
+export const CAN_VIEW_REPORTS = ['reports:read'];
 
-// The org-wide "every notification, for every user" feed — UI-only gate,
-// the server independently re-checks `roles.includes('administrator')'
-// itself (see notification.service.js#listNotifications) before ever
-// honoring the `all=true` query flag.
+export const CAN_UPLOAD_DOCUMENTS = ['documents:create'];
+export const CAN_DELETE_DOCUMENTS = ['documents:delete'];
+
+export const CAN_VIEW_AUDIT_LOGS = ['audit-logs:read'];
+export const CAN_CREATE_AUDIT_REMARKS = ['audit-remarks:create'];
+
+// The org-wide "every notification, for every user" feed is the one place
+// the server checks the administrator ROLE itself, so this one is a role.
 export const CAN_VIEW_ALL_NOTIFICATIONS = ['administrator'];
 
-// tenant-messages:create/read — a tenant composes, the assigned agent(s)
-// for their property (plus administrator, org-wide) read. See
-// tenantMessage.service.js; not a standard resource CRUD split.
-export const CAN_SEND_TENANT_MESSAGE = ['tenant'];
-export const CAN_VIEW_TENANT_MESSAGES = ['administrator', 'agent', 'owner'];
+export const CAN_SEND_TENANT_MESSAGE = ['tenant-messages:create'];
+export const CAN_VIEW_TENANT_MESSAGES = ['tenant-messages:read'];
 
-// referrals:approve/mark-paid — setting a bonus amount and paying it out
-// are deliberate financial actions, only administrator/accountant hold
-// them by default. Every role with referrals:read (including tenant, self-
-// scoped server-side) can view the /referrals page; this only gates the
-// approve/pay actions within it.
-export const CAN_MANAGE_REFERRALS = ['administrator', 'accountant'];
+export const CAN_MANAGE_REFERRALS = ['referrals:approve'];
 
-// agents:create/update/delete — an owner manages their own agents; an
-// administrator can link any agent to any owner. Agents only see the owners
-// they work for.
-export const CAN_MANAGE_AGENTS = ['administrator', 'owner'];
-
-export function canAny(roles, allowedRoles) {
-  return roles.some((r) => allowedRoles.includes(r));
-}
+// An owner manages their own agents; an administrator can link any agent to
+// any owner.
+export const CAN_MANAGE_AGENTS = ['agents:create'];

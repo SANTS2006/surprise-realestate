@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { hasPermission } from '../../config/capabilities.js';
 import { Plus, Wallet, RotateCcw, CheckCircle2, Clock, Receipt } from 'lucide-react';
 import { Card, CardBody } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -16,7 +17,7 @@ import { RecordPaymentModal } from '../../components/finance/RecordPaymentModal.
 import { paymentsApi } from '../../api/payments.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useStatusCounts } from '../../hooks/useStatusCounts.js';
-import { CAN_MANAGE_FINANCE, CAN_UPLOAD_DOCUMENTS, CAN_DELETE_DOCUMENTS, canAny } from '../../config/capabilities.js';
+import { CAN_MANAGE_PAYMENTS, CAN_UPLOAD_DOCUMENTS, CAN_DELETE_DOCUMENTS, canAny } from '../../config/capabilities.js';
 import { formatCurrency } from '../../utils/currency.js';
 import { API_URL } from '../../config/env.js';
 
@@ -27,7 +28,7 @@ const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' });
 export default function PaymentsListPage() {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
-  const canManage = canAny(roles, CAN_MANAGE_FINANCE);
+  const canManage = canAny(roles, CAN_MANAGE_PAYMENTS);
   const canUploadDocs = canAny(roles, CAN_UPLOAD_DOCUMENTS);
   const canDeleteDocs = canAny(roles, CAN_DELETE_DOCUMENTS);
 
@@ -141,7 +142,7 @@ export default function PaymentsListPage() {
                           canDelete={canDeleteDocs}
                           title={`Payment of ${formatCurrency(p.amount)} — Documents`}
                         />
-                        {canManage && p.status === 'completed' && (
+                        {hasPermission('payments:refund') && p.status === 'completed' && (
                           <Button variant="danger" size="sm" onClick={() => setRefundPayment(p)}>
                             <RotateCcw size={14} aria-hidden="true" />
                             Refund

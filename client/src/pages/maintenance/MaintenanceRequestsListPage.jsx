@@ -16,14 +16,14 @@ import { maintenanceApi } from '../../api/maintenance.js';
 import { propertiesApi } from '../../api/properties.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useStatusCounts } from '../../hooks/useStatusCounts.js';
-import { CAN_MANAGE_OPERATIONS, CAN_CREATE_MAINTENANCE, canAny } from '../../config/capabilities.js';
+import { CAN_MANAGE_MAINTENANCE, CAN_CREATE_MAINTENANCE, canAny } from '../../config/capabilities.js';
 
 const OPEN_STATUS_LIST = ['open', 'in_progress', 'completed'];
 
 export default function MaintenanceRequestsListPage() {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
-  const canManage = canAny(roles, CAN_MANAGE_OPERATIONS);
+  const canManage = canAny(roles, CAN_MANAGE_MAINTENANCE);
   const canCreate = canAny(roles, CAN_CREATE_MAINTENANCE);
 
   const [requests, setRequests] = useState([]);
