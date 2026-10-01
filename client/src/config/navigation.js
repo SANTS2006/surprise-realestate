@@ -1,5 +1,5 @@
 import {
-  Home, LayoutDashboard, Building2, Users, UserCircle, FileText, Wallet, Wrench, Bell, ShieldCheck, History, Settings, MessageSquare, Gift,
+  Home, LayoutDashboard, Briefcase, Building2, Users, UserCircle, FileText, Wallet, Wrench, Bell, ShieldCheck, History, Settings, MessageSquare, Gift,
 } from 'lucide-react';
 
 // Permission-aware navigation (§77 of the requirements): `roles` narrows
@@ -20,6 +20,7 @@ export const NAV_SECTIONS = [
   { label: 'Tenants', icon: Users, to: '/tenants', roles: ['administrator', 'agent', 'owner', 'accountant', 'auditor'] },
   { label: 'Owners', icon: UserCircle, to: '/owners', roles: ['administrator', 'agent', 'accountant', 'auditor'] },
   { label: 'Leases', icon: FileText, to: '/leases', roles: ['administrator', 'agent', 'owner', 'accountant', 'auditor'] },
+  { label: 'Agents', icon: Briefcase, to: '/agents', roles: ['administrator', 'owner', 'agent'] },
   { label: 'My Properties', icon: Home, to: '/my-rentals', roles: ['tenant'] },
   { label: 'My Lease', icon: FileText, to: '/my-lease', roles: ['tenant'] },
   {

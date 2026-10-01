@@ -50,3 +50,28 @@ export function setReferralPaid(id) {
     include: { referrer: { select: REFERRER_SELECT }, referred: { select: REFERRER_SELECT } },
   });
 }
+
+// Referrals made by (or for) tenants who rent within the given properties —
+// what an owner or agent sees of the referral program for their portfolio —
+// plus any the caller made themselves.
+function buildScopedReferralWhere(organizationId, { propertyIds, userId }) {
+  const inScope = { tenant: { rentals: { some: { propertyId: { in: propertyIds }, status: 'active' } } } };
+  return {
+    organizationId,
+    OR: [{ referrerId: userId }, { referrer: inScope }, { referred: inScope }],
+  };
+}
+
+export function findScopedReferrals(organizationId, { skip, take, propertyIds, userId }) {
+  return prisma.referral.findMany({
+    where: buildScopedReferralWhere(organizationId, { propertyIds, userId }),
+    include: { referrer: { select: REFERRER_SELECT }, referred: { select: REFERRER_SELECT } },
+    orderBy: { createdAt: 'desc' },
+    skip,
+    take,
+  });
+}
+
+export function countScopedReferrals(organizationId, { propertyIds, userId }) {
+  return prisma.referral.count({ where: buildScopedReferralWhere(organizationId, { propertyIds, userId }) });
+}

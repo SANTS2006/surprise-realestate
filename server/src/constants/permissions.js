@@ -97,7 +97,10 @@ export const DEFAULT_ROLE_TEMPLATES = {
       ...fullCrud(['invoices', 'payments', 'expenses']),
       ...readWrite(['reports']),
       // Maintenance, with delete.
-      ...fullCrud(['maintenance', 'work-orders', 'vendors']),
+      ...fullCrud(['maintenance', 'work-orders']),
+      // Vendors are shared across the whole organization, so an owner can use
+      // and add them but never edit or delete another owner's.
+      'vendors:read', 'vendors:create',
       ...readWrite(['inspections', 'documents', 'notifications']),
       // Their agents: see, add, update, deactivate, delete.
       ...fullCrud(['agents']),

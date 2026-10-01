@@ -35,3 +35,8 @@ export const cancel = asyncHandler(async (req, res) => {
   const request = await maintenanceService.cancelMaintenanceRequest(req.params.id, req.user.organizationId, req.user, req);
   sendSuccess(res, { data: request, message: 'Maintenance request cancelled.' });
 });
+
+export const remove = asyncHandler(async (req, res) => {
+  await maintenanceService.deleteMaintenanceRequest(req.params.id, req.user.organizationId, req.user, req);
+  sendSuccess(res, { data: null, message: 'Maintenance request deleted.' });
+});

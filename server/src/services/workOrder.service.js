@@ -1,3 +1,4 @@
+import { prisma } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import { buildPaginationMeta } from '../utils/pagination.js';
 import {
@@ -193,4 +194,16 @@ export async function cancelWorkOrder(id, organizationId, actingUser, req) {
   await setWorkOrderStatus(id, 'cancelled');
   await audit({ organizationId, userId: actingUser.id, action: 'work_order.cancelled', entityType: 'work_order', entityId: id, newValues: { status: 'cancelled' }, req });
   return getWorkOrder(id, organizationId, actingUser);
+}
+
+// Only work that never really happened can be deleted; started/completed
+// work orders carry real cost history and are cancelled instead.
+export async function deleteWorkOrder(id, organizationId, actingUser, req) {
+  const workOrder = await loadWorkOrderWithAccess(id, organizationId, actingUser);
+  if (!['pending', 'cancelled'].includes(workOrder.status)) {
+    throw AppError.conflict('Only pending or cancelled work orders can be deleted. Cancel it first.');
+  }
+  await prisma.workOrder.delete({ where: { id: workOrder.id } });
+  await audit({ organizationId, userId: actingUser.id, action: 'work_order.deleted', entityType: 'work_order', entityId: null, req });
+  return { deleted: true };
 }

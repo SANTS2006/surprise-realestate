@@ -14,4 +14,5 @@ paymentsRouter.get('/', requirePermission('payments:read'), validate(listPayment
 paymentsRouter.get('/:id', requirePermission('payments:read'), validate(paymentIdParamSchema), paymentController.get);
 paymentsRouter.get('/:id/receipt', requirePermission('payments:read'), validate(paymentIdParamSchema), paymentController.receipt);
 paymentsRouter.post('/', csrfProtection, requirePermission('payments:create'), validate(recordPaymentSchema), paymentController.create);
+paymentsRouter.delete('/:id', csrfProtection, requirePermission('payments:delete'), validate(paymentIdParamSchema), paymentController.remove);
 paymentsRouter.post('/:id/refund', csrfProtection, requirePermission('payments:refund'), validate(refundPaymentSchema), paymentController.refund);

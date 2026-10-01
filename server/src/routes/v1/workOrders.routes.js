@@ -17,6 +17,7 @@ workOrdersRouter.use(authenticate);
 workOrdersRouter.get('/', requirePermission('work-orders:read'), validate(listWorkOrdersSchema), workOrderController.list);
 workOrdersRouter.get('/:id', requirePermission('work-orders:read'), validate(workOrderIdParamSchema), workOrderController.get);
 workOrdersRouter.patch('/:id', csrfProtection, requirePermission('work-orders:update'), validate(updateWorkOrderSchema), workOrderController.update);
+workOrdersRouter.delete('/:id', csrfProtection, requirePermission('work-orders:delete'), validate(workOrderIdParamSchema), workOrderController.remove);
 workOrdersRouter.post('/:id/start', csrfProtection, requirePermission('work-orders:update'), validate(workOrderIdParamSchema), workOrderController.start);
 workOrdersRouter.post('/:id/complete', csrfProtection, requirePermission('work-orders:update'), validate(completeWorkOrderSchema), workOrderController.complete);
 workOrdersRouter.post('/:id/cancel', csrfProtection, requirePermission('work-orders:update'), validate(workOrderIdParamSchema), workOrderController.cancel);

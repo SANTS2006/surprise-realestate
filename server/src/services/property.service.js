@@ -15,6 +15,7 @@ import {
 import { findUserById } from '../repositories/user.repository.js';
 import { assertPropertyAccess, ORG_WIDE_PROPERTY_ROLES, ASSIGNMENT_SCOPED_ROLES, NO_MATCH_ID } from './resourceAccess.service.js';
 import { audit } from './audit.service.js';
+import { prisma } from '../config/database.js';
 
 const EMPTY_UNIT_SUMMARY = { total: 0, available: 0, occupied: 0, reserved: 0, under_maintenance: 0, unavailable: 0 };
 
@@ -113,10 +114,36 @@ export async function getProperty(id, organizationId, actingUser) {
   return { ...serializeProperty(property), unitSummary };
 }
 
+// Who a new property belongs to. An owner always creates their own; an agent
+// may only create for an owner they hold an active link to; administrators
+// choose freely (any owner in the organization, or none).
+async function resolvePropertyOwnerId(organizationId, body, actingUser) {
+  const orgWide = hasAnyRole(actingUser, ORG_WIDE_PROPERTY_ROLES);
+  if (!orgWide && actingUser.roles.includes('owner')) {
+    const owner = await findOwnerByUserId(actingUser.id, organizationId);
+    if (!owner) throw AppError.forbidden('No owner profile is associated with your account.');
+    return owner.id;
+  }
+  if (!orgWide && hasAnyRole(actingUser, ASSIGNMENT_SCOPED_ROLES)) {
+    if (!body.ownerId) throw AppError.badRequest('Choose which owner this property belongs to.');
+    const link = await prisma.ownerAgent.findFirst({
+      where: { ownerId: body.ownerId, agentUserId: actingUser.id, organizationId, status: 'active' },
+    });
+    if (!link) throw AppError.badRequest('You can only add properties for owners you work for.');
+    return body.ownerId;
+  }
+  if (body.ownerId) {
+    const owner = await prisma.owner.findFirst({ where: { id: body.ownerId, organizationId } });
+    if (!owner) throw AppError.badRequest('That owner does not exist in this organization.');
+  }
+  return body.ownerId ?? null;
+}
+
 export async function createPropertyRecord(organizationId, body, actingUser, req) {
+  const ownerId = await resolvePropertyOwnerId(organizationId, body, actingUser);
   const property = await createProperty({
     organizationId,
-    ownerId: body.ownerId ?? null,
+    ownerId,
     propertyCode: body.propertyCode,
     name: body.name,
     propertyType: body.propertyType,

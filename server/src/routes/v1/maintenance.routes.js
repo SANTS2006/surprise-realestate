@@ -17,6 +17,7 @@ maintenanceRouter.use(authenticate);
 maintenanceRouter.get('/', requirePermission('maintenance:read'), validate(listMaintenanceRequestsSchema), maintenanceController.list);
 maintenanceRouter.get('/:id', requirePermission('maintenance:read'), validate(maintenanceRequestIdParamSchema), maintenanceController.get);
 maintenanceRouter.post('/', csrfProtection, requirePermission('maintenance:create'), validate(createMaintenanceRequestSchema), maintenanceController.create);
+maintenanceRouter.delete('/:id', csrfProtection, requirePermission('maintenance:delete'), validate(maintenanceRequestIdParamSchema), maintenanceController.remove);
 maintenanceRouter.post('/:id/review', csrfProtection, requirePermission('maintenance:update'), validate(maintenanceRequestIdParamSchema), maintenanceController.review);
 maintenanceRouter.post('/:id/assign', csrfProtection, requirePermission('maintenance:update'), validate(assignMaintenanceRequestSchema), maintenanceController.assign);
 maintenanceRouter.post('/:id/cancel', csrfProtection, requirePermission('maintenance:update'), validate(maintenanceRequestIdParamSchema), maintenanceController.cancel);

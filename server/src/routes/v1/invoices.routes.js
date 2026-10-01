@@ -17,6 +17,7 @@ invoicesRouter.get('/', requirePermission('invoices:read'), validate(listInvoice
 invoicesRouter.get('/:id', requirePermission('invoices:read'), validate(invoiceIdParamSchema), invoiceController.get);
 invoicesRouter.post('/', csrfProtection, requirePermission('invoices:create'), validate(createInvoiceSchema), invoiceController.create);
 invoicesRouter.patch('/:id', csrfProtection, requirePermission('invoices:update'), validate(updateInvoiceSchema), invoiceController.update);
+invoicesRouter.delete('/:id', csrfProtection, requirePermission('invoices:delete'), validate(invoiceIdParamSchema), invoiceController.remove);
 invoicesRouter.post('/:id/send', csrfProtection, requirePermission('invoices:update'), validate(invoiceIdParamSchema), invoiceController.send);
 invoicesRouter.post('/:id/void', csrfProtection, requirePermission('invoices:void'), validate(voidInvoiceSchema), invoiceController.voidInvoice);
 

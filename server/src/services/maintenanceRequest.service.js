@@ -1,3 +1,4 @@
+import { deleteDocumentsFor } from './recordCleanup.service.js';
 import { AppError } from '../utils/AppError.js';
 import { buildPaginationMeta } from '../utils/pagination.js';
 import {
@@ -171,4 +172,14 @@ export async function cancelMaintenanceRequest(id, organizationId, actingUser, r
 // once a work order exists.
 export async function cascadeMaintenanceRequestStatus(id, status, extra = {}) {
   return updateMaintenanceRequestStatus(id, status, extra);
+}
+
+// Permanently removes a maintenance request, its work orders (cascade) and
+// its attachments.
+export async function deleteMaintenanceRequest(id, organizationId, actingUser, req) {
+  const request = await loadMaintenanceRequestWithAccess(id, organizationId, actingUser);
+  await deleteDocumentsFor(organizationId, 'maintenance_request', id);
+  await prisma.maintenanceRequest.delete({ where: { id: request.id } });
+  await audit({ organizationId, userId: actingUser.id, action: 'maintenance_request.deleted', entityType: 'maintenance_request', entityId: null, oldValues: { title: request.title }, req });
+  return { deleted: true };
 }

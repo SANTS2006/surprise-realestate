@@ -18,6 +18,7 @@ expensesRouter.post('/categories', csrfProtection, requirePermission('expenses:c
 expensesRouter.get('/', requirePermission('expenses:read'), validate(listExpensesSchema), expenseController.list);
 expensesRouter.get('/:id', requirePermission('expenses:read'), validate(expenseIdParamSchema), expenseController.get);
 expensesRouter.post('/', csrfProtection, requirePermission('expenses:create'), validate(createExpenseSchema), expenseController.create);
+expensesRouter.delete('/:id', csrfProtection, requirePermission('expenses:delete'), validate(expenseIdParamSchema), expenseController.remove);
 expensesRouter.post('/:id/approve', csrfProtection, requirePermission('expenses:approve'), validate(expenseIdParamSchema), expenseController.approve);
 expensesRouter.post('/:id/reject', csrfProtection, requirePermission('expenses:approve'), validate(expenseIdParamSchema), expenseController.reject);
 expensesRouter.post('/:id/mark-paid', csrfProtection, requirePermission('expenses:update'), validate(expenseIdParamSchema), expenseController.markPaid);

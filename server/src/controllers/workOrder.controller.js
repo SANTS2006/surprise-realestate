@@ -43,3 +43,8 @@ export const cancel = asyncHandler(async (req, res) => {
   const workOrder = await workOrderService.cancelWorkOrder(req.params.id, req.user.organizationId, req.user, req);
   sendSuccess(res, { data: workOrder, message: 'Work order cancelled.' });
 });
+
+export const remove = asyncHandler(async (req, res) => {
+  await workOrderService.deleteWorkOrder(req.params.id, req.user.organizationId, req.user, req);
+  sendSuccess(res, { data: null, message: 'Work order deleted.' });
+});

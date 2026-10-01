@@ -167,3 +167,15 @@ export async function refundPayment(id, organizationId, body, actingUser, req) {
   await audit({ organizationId, userId: actingUser.id, action: 'payment.refunded', entityType: 'payment', entityId: id, oldValues: { status: 'completed' }, newValues: { status: 'refunded', reason: body?.reason }, req });
   return getPayment(id, organizationId, actingUser);
 }
+
+// Only a payment that never settled (pending or failed) can be deleted; a
+// completed one is refunded instead so the books stay truthful.
+export async function deletePayment(id, organizationId, actingUser, req) {
+  const payment = await loadPaymentWithAccess(id, organizationId, actingUser);
+  if (!['pending', 'failed'].includes(payment.status)) {
+    throw AppError.conflict('Only pending or failed payments can be deleted. Refund a completed payment instead.');
+  }
+  await prisma.payment.delete({ where: { id: payment.id } });
+  await audit({ organizationId, userId: actingUser.id, action: 'payment.deleted', entityType: 'payment', entityId: null, req });
+  return { deleted: true };
+}

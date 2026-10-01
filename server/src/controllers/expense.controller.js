@@ -46,3 +46,8 @@ export const createCategory = asyncHandler(async (req, res) => {
   const category = await expenseCategoryService.createExpenseCategoryRecord(req.user.organizationId, req.body, req.user, req);
   sendSuccess(res, { statusCode: 201, data: category, message: 'Expense category created.' });
 });
+
+export const remove = asyncHandler(async (req, res) => {
+  await expenseService.deleteExpense(req.params.id, req.user.organizationId, req.user, req);
+  sendSuccess(res, { data: null, message: 'Expense deleted.' });
+});

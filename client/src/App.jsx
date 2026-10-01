@@ -51,6 +51,7 @@ const ReportsPage = lazy(() => import('./pages/reports/ReportsPage.jsx'));
 const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage.jsx'));
 const AuditLogsPage = lazy(() => import('./pages/audit/AuditLogsPage.jsx'));
 const ReferralsPage = lazy(() => import('./pages/referrals/ReferralsPage.jsx'));
+const AgentsPage = lazy(() => import('./pages/agents/AgentsPage.jsx'));
 const MyRentalsPage = lazy(() => import('./pages/tenants/MyRentalsPage.jsx'));
 const PlatformAdminOverviewPage = lazy(() => import('./pages/platformAdmin/PlatformAdminOverviewPage.jsx'));
 const PlatformAdminOrganizationsPage = lazy(() => import('./pages/platformAdmin/PlatformAdminOrganizationsPage.jsx'));
@@ -110,6 +111,7 @@ export default function App() {
                 <Route path="/dashboard" element={<Suspense fallback={<LoadingState />}><DashboardPage /></Suspense>} />
                 <Route path="/properties" element={<Suspense fallback={<LoadingState />}><PropertiesListPage /></Suspense>} />
                 <Route path="/properties/:id" element={<Suspense fallback={<LoadingState />}><PropertyDetailPage /></Suspense>} />
+                <Route path="/agents" element={<Suspense fallback={<LoadingState />}><AgentsPage /></Suspense>} />
                 <Route path="/my-rentals" element={<Suspense fallback={<LoadingState />}><MyRentalsPage /></Suspense>} />
                 <Route path="/tenants" element={<Suspense fallback={<LoadingState />}><TenantsListPage /></Suspense>} />
                 <Route path="/message-manager" element={<Suspense fallback={<LoadingState />}><MessageManagerPage /></Suspense>} />

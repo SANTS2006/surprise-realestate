@@ -2,8 +2,9 @@ import { AppError } from '../utils/AppError.js';
 import { buildPaginationMeta } from '../utils/pagination.js';
 import {
   createReferral, findReferralById, findReferralsByOrganization, countReferralsByOrganization,
-  setReferralApproved, setReferralPaid,
+  setReferralApproved, setReferralPaid, findScopedReferrals, countScopedReferrals,
 } from '../repositories/referral.repository.js';
+import { getRestrictedScope } from './resourceAccess.service.js';
 import { findUserByReferralCode } from '../repositories/user.repository.js';
 import { audit } from './audit.service.js';
 import { notify } from './notification.service.js';
@@ -46,6 +47,16 @@ export async function listMyReferrals(organizationId, actingUser, { page, pageSi
   const [referrals, total] = await Promise.all([
     findReferralsByOrganization(organizationId, { skip, take, referrerId: actingUser.id }),
     countReferralsByOrganization(organizationId, { referrerId: actingUser.id }),
+  ]);
+  return { referrals: referrals.map(serializeReferral), meta: buildPaginationMeta({ page, pageSize, total }) };
+}
+
+export async function listScopedReferrals(organizationId, actingUser, { page, pageSize, skip, take }) {
+  const scope = await getRestrictedScope(actingUser, organizationId);
+  const propertyIds = scope.propertyIds ?? [];
+  const [referrals, total] = await Promise.all([
+    findScopedReferrals(organizationId, { skip, take, propertyIds, userId: actingUser.id }),
+    countScopedReferrals(organizationId, { propertyIds, userId: actingUser.id }),
   ]);
   return { referrals: referrals.map(serializeReferral), meta: buildPaginationMeta({ page, pageSize, total }) };
 }

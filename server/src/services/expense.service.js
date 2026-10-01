@@ -1,3 +1,5 @@
+import { deleteDocumentsFor } from './recordCleanup.service.js';
+import { prisma } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import { buildPaginationMeta } from '../utils/pagination.js';
 import {
@@ -98,3 +100,16 @@ export const rejectExpense = (id, organizationId, actingUser, req) =>
 
 export const markExpensePaid = (id, organizationId, actingUser, req) =>
   transitionExpense(id, organizationId, actingUser, req, { from: ['approved'], to: 'paid', verb: 'mark paid', auditAction: 'marked_paid' });
+
+// Approved or paid expenses are part of the books and are never erased —
+// only ones still awaiting a decision (or rejected) can be deleted.
+export async function deleteExpense(id, organizationId, actingUser, req) {
+  const expense = await loadExpenseWithAccess(id, organizationId, actingUser);
+  if (!['pending_approval', 'rejected'].includes(expense.status)) {
+    throw AppError.conflict('Approved or paid expenses cannot be deleted. Reject it first if it was entered in error.');
+  }
+  await deleteDocumentsFor(organizationId, 'expense', id);
+  await prisma.expense.delete({ where: { id: expense.id } });
+  await audit({ organizationId, userId: actingUser.id, action: 'expense.deleted', entityType: 'expense', entityId: null, oldValues: { amount: String(expense.amount) }, req });
+  return { deleted: true };
+}

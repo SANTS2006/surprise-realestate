@@ -33,3 +33,8 @@ export const refund = asyncHandler(async (req, res) => {
   const payment = await paymentService.refundPayment(req.params.id, req.user.organizationId, req.body, req.user, req);
   sendSuccess(res, { data: payment, message: 'Payment refunded.' });
 });
+
+export const remove = asyncHandler(async (req, res) => {
+  await paymentService.deletePayment(req.params.id, req.user.organizationId, req.user, req);
+  sendSuccess(res, { data: null, message: 'Payment deleted.' });
+});

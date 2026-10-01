@@ -100,6 +100,11 @@ export const CAN_VIEW_TENANT_MESSAGES = ['administrator', 'agent', 'owner'];
 // approve/pay actions within it.
 export const CAN_MANAGE_REFERRALS = ['administrator', 'accountant'];
 
+// agents:create/update/delete — an owner manages their own agents; an
+// administrator can link any agent to any owner. Agents only see the owners
+// they work for.
+export const CAN_MANAGE_AGENTS = ['administrator', 'owner'];
+
 export function canAny(roles, allowedRoles) {
   return roles.some((r) => allowedRoles.includes(r));
 }

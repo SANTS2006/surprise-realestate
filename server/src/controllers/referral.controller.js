@@ -10,9 +10,12 @@ import * as referralService from '../services/referral.service.js';
 export const list = asyncHandler(async (req, res) => {
   const { page, pageSize, skip, take } = parsePagination(req.query);
   const canViewAll = req.user.roles.some((r) => ['administrator', 'accountant', 'auditor'].includes(r));
+  const sees = (...roles) => req.user.roles.some((r) => roles.includes(r));
   const result = canViewAll
     ? await referralService.listAllReferrals(req.user.organizationId, { page, pageSize, skip, take, status: req.query.status })
-    : await referralService.listMyReferrals(req.user.organizationId, req.user, { page, pageSize, skip, take });
+    : sees('owner', 'agent')
+      ? await referralService.listScopedReferrals(req.user.organizationId, req.user, { page, pageSize, skip, take })
+      : await referralService.listMyReferrals(req.user.organizationId, req.user, { page, pageSize, skip, take });
   sendSuccess(res, { data: result.referrals, meta: result.meta });
 });
 

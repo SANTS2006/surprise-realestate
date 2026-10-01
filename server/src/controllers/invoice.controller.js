@@ -40,3 +40,8 @@ export const voidInvoice = asyncHandler(async (req, res) => {
   const invoice = await invoiceService.voidInvoice(req.params.id, req.user.organizationId, req.body, req.user, req);
   sendSuccess(res, { data: invoice, message: 'Invoice voided.' });
 });
+
+export const remove = asyncHandler(async (req, res) => {
+  await invoiceService.deleteInvoice(req.params.id, req.user.organizationId, req.user, req);
+  sendSuccess(res, { data: null, message: 'Invoice deleted.' });
+});

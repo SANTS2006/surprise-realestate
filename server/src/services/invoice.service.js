@@ -1,3 +1,5 @@
+import { deleteDocumentsFor } from './recordCleanup.service.js';
+import { prisma } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import { buildPaginationMeta } from '../utils/pagination.js';
 import {
@@ -212,4 +214,17 @@ export async function voidInvoice(id, organizationId, body, actingUser, req) {
   await setInvoiceStatus(id, 'void');
   await audit({ organizationId, userId: actingUser.id, action: 'invoice.voided', entityType: 'invoice', entityId: id, oldValues: { status: invoice.status }, newValues: { status: 'void', reason: body?.reason }, req });
   return getInvoice(id, organizationId, actingUser);
+}
+
+// A draft was never issued, so it can simply be deleted. Once sent, an
+// invoice is a financial record and is voided, not erased.
+export async function deleteInvoice(id, organizationId, actingUser, req) {
+  const invoice = await loadInvoiceWithAccess(id, organizationId, actingUser);
+  if (invoice.status !== 'draft') {
+    throw AppError.conflict('Only draft invoices can be deleted. Void an invoice that has been sent.');
+  }
+  await deleteDocumentsFor(organizationId, 'invoice', id);
+  await prisma.invoice.delete({ where: { id: invoice.id } });
+  await audit({ organizationId, userId: actingUser.id, action: 'invoice.deleted', entityType: 'invoice', entityId: null, req });
+  return { deleted: true };
 }
