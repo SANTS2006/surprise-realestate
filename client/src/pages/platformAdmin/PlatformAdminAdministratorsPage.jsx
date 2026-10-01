@@ -118,6 +118,40 @@ export default function PlatformAdminAdministratorsPage() {
       <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         {!admins && !error && <div className="p-8"><LoadingState label="Loading administrators…" /></div>}
         {admins && (
+          <>
+          <ul className="divide-y divide-slate-100 md:hidden dark:divide-slate-800">
+            {admins.map((a) => (
+              <li key={a.id} className="flex flex-col gap-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-slate-900 dark:text-slate-100">
+                      {a.firstName} {a.lastName}
+                      {a.id === me?.id && <span className="ml-2 text-xs font-normal text-slate-500 dark:text-slate-400">(you)</span>}
+                    </p>
+                    <p className="truncate text-sm text-slate-500 dark:text-slate-400">{a.email}</p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <Badge tone={a.isActive ? 'success' : 'danger'}>{a.isActive ? 'Active' : 'Deactivated'}</Badge>
+                    {a.isDefault && <Badge tone="brand">Default</Badge>}
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Last sign-in: {a.lastLoginAt ? new Date(a.lastLoginAt).toLocaleDateString() : 'Never'}</p>
+                {a.id !== me?.id && (
+                  <div className="flex gap-2">
+                    {a.isActive ? (
+                      <Button variant="danger" size="sm" className="flex-1" onClick={() => setPending({ admin: a, nextActive: false })}><UserX size={14} aria-hidden="true" />Deactivate</Button>
+                    ) : (
+                      <Button variant="secondary" size="sm" className="flex-1" onClick={() => setPending({ admin: a, nextActive: true })}><UserCheck size={14} aria-hidden="true" />Reactivate</Button>
+                    )}
+                    {!a.isDefault && (
+                      <Button variant="danger" size="sm" className="flex-1" onClick={() => setPendingDelete(a)}><Trash2 size={14} aria-hidden="true" />Delete</Button>
+                    )}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block">
           <Table>
             <Thead>
               <Tr>
@@ -164,6 +198,8 @@ export default function PlatformAdminAdministratorsPage() {
               ))}
             </Tbody>
           </Table>
+          </div>
+          </>
         )}
       </div>
 

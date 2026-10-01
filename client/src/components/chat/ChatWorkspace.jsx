@@ -357,7 +357,15 @@ export function ChatWorkspace() {
   const canDirect = actor.kind === 'user' && rooms.some((r) => r.type.startsWith('community'));
 
   return (
-    <div className="flex h-[calc(100vh-11rem)] min-h-[28rem] overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+    <div
+      className={clsx(
+        'flex overflow-hidden border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 lg:h-[calc(100vh-11rem)] lg:min-h-[28rem] lg:rounded-2xl',
+        // Phones: an open conversation takes over the whole screen (like any
+        // messaging app) so the message box is never below the fold; the list
+        // sits in the page at a height that fits the screen.
+        active ? 'max-lg:fixed max-lg:inset-0 max-lg:z-40 max-lg:rounded-none' : 'h-[calc(100dvh-17rem)] min-h-[20rem] rounded-2xl',
+      )}
+    >
       <div className={clsx('w-full shrink-0 border-r border-slate-200 lg:w-80 dark:border-slate-800', active ? 'hidden lg:block' : 'block')}>
         <RoomList rooms={rooms} activeId={activeId} onSelect={setActiveId} onNewChat={() => setNewChatOpen(true)} canDirect={canDirect} />
       </div>

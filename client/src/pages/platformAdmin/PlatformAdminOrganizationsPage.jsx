@@ -126,6 +126,37 @@ export default function PlatformAdminOrganizationsPage() {
         )}
 
         {visible.length > 0 && (
+          <>
+          {/* Phones: one card per organization, every action reachable without sideways scrolling. */}
+          <ul className="divide-y divide-slate-100 md:hidden dark:divide-slate-800">
+            {visible.map((org) => (
+              <li key={org.id} className="flex flex-col gap-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <button type="button" onClick={() => setDetailId(org.id)} className="flex min-w-0 items-center gap-2 text-left">
+                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: org.primaryColor }} aria-hidden="true" />
+                    <span className="truncate font-medium text-slate-900 dark:text-slate-100">{org.name}</span>
+                  </button>
+                  <Badge tone={org.status === 'active' ? 'success' : 'danger'}>{org.status === 'active' ? 'Active' : 'Deactivated'}</Badge>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
+                  <a href={`${APP_ORIGIN}/${org.slug}/login`} target="_blank" rel="noreferrer" className="flex min-w-0 items-center gap-1 text-brand-600 dark:text-brand-400">
+                    <span className="truncate">/{org.slug}</span> <ExternalLink size={12} aria-hidden="true" />
+                  </a>
+                  <span>{org.userCount ?? 0} users</span>
+                  <span>{new Date(org.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="secondary" size="sm" className="flex-1" onClick={() => setDetailId(org.id)}><Eye size={14} aria-hidden="true" />Details</Button>
+                  {org.status === 'active' ? (
+                    <Button variant="danger" size="sm" className="flex-1" onClick={() => setPendingStatusChange({ org, nextStatus: 'suspended' })}><ShieldOff size={14} aria-hidden="true" />Deactivate</Button>
+                  ) : (
+                    <Button variant="secondary" size="sm" className="flex-1" onClick={() => setPendingStatusChange({ org, nextStatus: 'active' })}><CheckCircle2 size={14} aria-hidden="true" />Reactivate</Button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block">
           <Table>
             <Thead>
               <Tr>
@@ -181,6 +212,8 @@ export default function PlatformAdminOrganizationsPage() {
               ))}
             </Tbody>
           </Table>
+          </div>
+          </>
         )}
       </div>
 

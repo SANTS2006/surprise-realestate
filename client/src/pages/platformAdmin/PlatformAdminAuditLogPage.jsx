@@ -70,6 +70,21 @@ export default function PlatformAdminAuditLogPage() {
         {!data && !error && <div className="p-8"><LoadingState label="Loading audit log…" /></div>}
         {data && data.logs.length === 0 && <p className="px-6 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No activity recorded yet.</p>}
         {data && data.logs.length > 0 && (
+          <>
+          <ul className="divide-y divide-slate-100 md:hidden dark:divide-slate-800">
+            {data.logs.map((log) => (
+              <li key={log.id} className="flex flex-col gap-1.5 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <Badge tone={TONE(log.action)}>{label(log.action)}</Badge>
+                  <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">{dateTimeFmt.format(new Date(log.createdAt))}</span>
+                </div>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{log.actorName}</p>
+                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{log.actorEmail}</p>
+                {log.targetLabel && <p className="text-sm text-slate-600 dark:text-slate-300">→ {log.targetLabel}</p>}
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block">
           <Table>
             <Thead>
               <Tr><Th>When</Th><Th>Who</Th><Th>Action</Th><Th>Target</Th></Tr>
@@ -88,6 +103,8 @@ export default function PlatformAdminAuditLogPage() {
               ))}
             </Tbody>
           </Table>
+          </div>
+          </>
         )}
       </div>
 
