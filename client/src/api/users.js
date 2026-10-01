@@ -6,5 +6,6 @@ export const usersApi = {
   get: (id) => apiClient.get(`/users/${id}`),
   invite: (body) => apiClient.post('/users/invite', body),
   updateStatus: (id, status) => apiClient.patch(`/users/${id}/status`, { status }),
+  remove: (id) => apiClient.delete(`/users/${id}`),
   updateRole: (id, role) => apiClient.patch(`/users/${id}/role`, { role }),
 };

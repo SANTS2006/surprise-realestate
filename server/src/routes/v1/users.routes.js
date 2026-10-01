@@ -17,3 +17,4 @@ usersRouter.get('/:id', requirePermission('users:read'), validate(getUserSchema)
 usersRouter.post('/invite', csrfProtection, requirePermission('users:invite'), validate(inviteUserSchema), userController.inviteUser);
 usersRouter.patch('/:id/status', csrfProtection, requirePermission('users:update'), validate(updateUserStatusSchema), userController.updateUserStatus);
 usersRouter.patch('/:id/role', csrfProtection, requirePermission('users:change-role'), validate(updateUserRoleSchema), userController.updateUserRole);
+usersRouter.delete('/:id', csrfProtection, requirePermission('users:delete'), validate(getUserSchema), userController.deleteUser);

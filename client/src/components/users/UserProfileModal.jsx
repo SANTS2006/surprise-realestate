@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { LogOut } from 'lucide-react';
+import { LogOut, Trash2 } from 'lucide-react';
 import { Modal } from '../ui/Modal.jsx';
 import { Button } from '../ui/Button.jsx';
 import { Badge } from '../ui/Badge.jsx';
 import { Alert } from '../ui/Alert.jsx';
+import { ConfirmDialog } from '../ui/ConfirmDialog.jsx';
 import { UserAvatar } from '../ui/UserAvatar.jsx';
 import { usersApi } from '../../api/users.js';
 
 const STATUS_TONE = { pending: 'warning', active: 'success', inactive: 'neutral', locked: 'danger' };
 const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'long' });
 
-export function UserProfileModal({ open, onClose, user, roles, canManage, isSelf, onChanged }) {
+export function UserProfileModal({ open, onClose, user, roles, canManage, isSelf, onChanged, onDeleted }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
   const [roleError, setRoleError] = useState(null);
   const [statusError, setStatusError] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -40,6 +43,18 @@ export function UserProfileModal({ open, onClose, user, roles, canManage, isSelf
       setStatusError(err.message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleteError(null);
+    try {
+      await usersApi.remove(user.id);
+      onDeleted?.(user);
+      onClose();
+    } catch (err) {
+      setDeleteError(err.message);
+      throw err;
     }
   };
 
@@ -104,8 +119,26 @@ export function UserProfileModal({ open, onClose, user, roles, canManage, isSelf
               </Button>
             </div>
           )}
+
+          <div className="border-t border-slate-200 pt-4 dark:border-slate-800">
+            {deleteError && <Alert variant="error" className="mb-2">{deleteError}</Alert>}
+            <Button variant="danger" onClick={() => setConfirmDelete(true)} className="w-full">
+              <Trash2 size={15} aria-hidden="true" />
+              Delete user permanently
+            </Button>
+          </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={handleDelete}
+        title="Delete this user permanently?"
+        description={`${user.firstName} ${user.lastName} and everything tied to them will be erased from the system and the database — their login, profile, messages, and any tenant or owner records, leases, invoices and payments. This cannot be undone.`}
+        confirmLabel="Delete permanently"
+        variant="danger"
+      />
 
       <div className="mt-6 flex justify-end">
         <Button type="button" variant="secondary" onClick={onClose}>Close</Button>

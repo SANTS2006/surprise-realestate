@@ -2,6 +2,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { parsePagination } from '../utils/pagination.js';
 import * as userService from '../services/user.service.js';
+import { purgeUser } from '../services/userPurge.service.js';
 import { getMyOrganization } from '../services/organization.service.js';
 
 export const listUsers = asyncHandler(async (req, res) => {
@@ -42,4 +43,9 @@ export const updateUserStatus = asyncHandler(async (req, res) => {
 export const updateUserRole = asyncHandler(async (req, res) => {
   const user = await userService.updateUserRole(req.params.id, req.user.organizationId, req.body.role, req.user, req);
   sendSuccess(res, { data: user, message: 'User role updated.' });
+});
+
+export const deleteUser = asyncHandler(async (req, res) => {
+  await purgeUser(req.params.id, req.user.organizationId, req.user, req);
+  sendSuccess(res, { data: null, message: 'User permanently deleted.' });
 });

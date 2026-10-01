@@ -133,6 +133,7 @@ function UsersTab({ canManage }) {
         canManage={canManage}
         isSelf={profileUser?.id === me?.id}
         onChanged={handleUserChanged}
+        onDeleted={() => { setProfileUser(null); load(); }}
       />
     </div>
   );
