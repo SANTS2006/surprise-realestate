@@ -5,6 +5,8 @@ import { Topbar } from '../components/layout/Topbar.jsx';
 import { Footer } from '../components/layout/Footer.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { ChatProvider } from '../contexts/ChatContext.jsx';
+import { CallProvider } from '../contexts/CallContext.jsx';
+import { CallOverlay } from '../components/chat/CallOverlay.jsx';
 import { useDocumentTitle } from '../hooks/useDocumentTitle.js';
 import { PAGE_TITLES } from '../config/pageTitles.js';
 
@@ -39,5 +41,12 @@ export function DashboardLayout() {
   // Chat (and its encryption keys, socket and incoming-call handling) only
   // exists for the roles that can use it.
   const chatUser = user?.roles?.some((r) => CHAT_ROLES.includes(r));
-  return chatUser ? <ChatProvider actor={{ kind: 'user', id: user.id }}>{shell}</ChatProvider> : shell;
+  return chatUser ? (
+    <ChatProvider actor={{ kind: 'user', id: user.id }}>
+      <CallProvider>
+        <CallOverlay />
+        {shell}
+      </CallProvider>
+    </ChatProvider>
+  ) : shell;
 }

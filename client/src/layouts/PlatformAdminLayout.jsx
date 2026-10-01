@@ -7,6 +7,8 @@ import { ThemeToggle } from '../components/ui/ThemeToggle.jsx';
 import { usePlatformAdmin } from '../contexts/PlatformAdminContext.jsx';
 import { useBranding } from '../contexts/BrandingContext.jsx';
 import { ChatProvider, useOptionalChat } from '../contexts/ChatContext.jsx';
+import { CallProvider } from '../contexts/CallContext.jsx';
+import { CallOverlay } from '../components/chat/CallOverlay.jsx';
 
 const NAV = [
   { to: '/platform-admin', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -25,7 +27,10 @@ export default function PlatformAdminLayout() {
   if (!admin) return null;
   return (
     <ChatProvider actor={{ kind: 'platform', id: admin.id }}>
-      <PlatformShell />
+      <CallProvider>
+        <CallOverlay />
+        <PlatformShell />
+      </CallProvider>
     </ChatProvider>
   );
 }
