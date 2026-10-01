@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Plus, PlayCircle, CheckCircle2, XCircle, ClipboardList } from 'lucide-react';
+import { hasPermission } from '../../config/capabilities.js';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, Plus, PlayCircle, CheckCircle2, XCircle, ClipboardList, Trash2 } from 'lucide-react';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
 import { Badge } from '../../components/ui/Badge.jsx';
@@ -13,7 +14,7 @@ import { CompleteWorkOrderModal } from '../../components/maintenance/CompleteWor
 import { maintenanceApi } from '../../api/maintenance.js';
 import { workOrdersApi } from '../../api/workOrders.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { CAN_MANAGE_MAINTENANCE, CAN_UPLOAD_DOCUMENTS, CAN_DELETE_DOCUMENTS, canAny } from '../../config/capabilities.js';
+import { CAN_UPLOAD_DOCUMENTS, CAN_DELETE_DOCUMENTS, canAny } from '../../config/capabilities.js';
 import { formatCurrency } from '../../utils/currency.js';
 
 const STATUS_TONE = { open: 'warning', in_review: 'brand', assigned: 'brand', scheduled: 'brand', in_progress: 'warning', completed: 'success', cancelled: 'neutral' };
@@ -23,9 +24,9 @@ const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' });
 
 export default function MaintenanceRequestDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const roles = user?.roles ?? [];
-  const canManage = canAny(roles, CAN_MANAGE_MAINTENANCE);
   const canUploadMedia = canAny(roles, CAN_UPLOAD_DOCUMENTS);
   const canDeleteMedia = canAny(roles, CAN_DELETE_DOCUMENTS);
 
@@ -35,6 +36,8 @@ export default function MaintenanceRequestDetailPage() {
   const [createWOOpen, setCreateWOOpen] = useState(false);
   const [completeWO, setCompleteWO] = useState(null);
   const [cancelWO, setCancelWO] = useState(null);
+  const [deleteWO, setDeleteWO] = useState(null);
+  const [deleteRequestOpen, setDeleteRequestOpen] = useState(false);
 
   const loadRequest = useCallback(() => {
     maintenanceApi.get(id).then((res) => setRequest(res.data)).catch((err) => setError(err.message));
@@ -55,7 +58,10 @@ export default function MaintenanceRequestDetailPage() {
   if (error && !request) return <Alert variant="error">{error}</Alert>;
   if (!request) return <LoadingState label="Loading maintenance request…" />;
 
-  const canCreateWorkOrder = canManage && ['assigned', 'scheduled'].includes(request.status);
+  const canCreateWorkOrder = hasPermission('work-orders:create') && ['assigned', 'scheduled'].includes(request.status);
+  const canUpdateWorkOrders = hasPermission('work-orders:update');
+  const canDeleteWorkOrders = hasPermission('work-orders:delete');
+  const canDeleteRequest = hasPermission('maintenance:delete');
 
   return (
     <div className="flex flex-col gap-6">
@@ -73,6 +79,12 @@ export default function MaintenanceRequestDetailPage() {
           <Badge tone={STATUS_TONE[request.status] ?? 'neutral'}>{request.status.replace('_', ' ')}</Badge>
         </div>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Reported {dateFmt.format(new Date(request.reportedAt))}</p>
+        {canDeleteRequest && (
+          <Button variant="danger" size="sm" className="mt-3" onClick={() => setDeleteRequestOpen(true)}>
+            <Trash2 size={14} aria-hidden="true" />
+            Delete request
+          </Button>
+        )}
       </div>
 
       {request.description && (
@@ -127,9 +139,9 @@ export default function MaintenanceRequestDetailPage() {
                       {wo.actualCost != null && <> · Actual {formatCurrency(wo.actualCost)}</>}
                     </p>
                   </div>
-                  {canManage && (
+                  {(canUpdateWorkOrders || (canDeleteWorkOrders && ['pending', 'cancelled'].includes(wo.status))) && (
                     <div className="flex shrink-0 items-center gap-2">
-                      {['pending', 'scheduled'].includes(wo.status) && (
+                      {canUpdateWorkOrders && ['pending', 'scheduled'].includes(wo.status) && (
                         <>
                           <Button size="sm" onClick={() => startWorkOrder(wo)}>
                             <PlayCircle size={14} aria-hidden="true" />
@@ -141,10 +153,16 @@ export default function MaintenanceRequestDetailPage() {
                           </Button>
                         </>
                       )}
-                      {wo.status === 'in_progress' && (
+                      {canUpdateWorkOrders && wo.status === 'in_progress' && (
                         <Button size="sm" onClick={() => setCompleteWO(wo)}>
                           <CheckCircle2 size={14} aria-hidden="true" />
                           Complete
+                        </Button>
+                      )}
+                      {canDeleteWorkOrders && ['pending', 'cancelled'].includes(wo.status) && (
+                        <Button variant="danger" size="sm" onClick={() => setDeleteWO(wo)} aria-label="Delete work order">
+                          <Trash2 size={14} aria-hidden="true" />
+                          Delete
                         </Button>
                       )}
                     </div>
@@ -158,6 +176,22 @@ export default function MaintenanceRequestDetailPage() {
 
       <CreateWorkOrderModal open={createWOOpen} onClose={() => setCreateWOOpen(false)} onSaved={() => { loadWorkOrders(); loadRequest(); }} request={request} />
       <CompleteWorkOrderModal open={Boolean(completeWO)} onClose={() => setCompleteWO(null)} onSaved={() => { loadWorkOrders(); loadRequest(); }} workOrder={completeWO} />
+      <ConfirmDialog
+        open={Boolean(deleteWO)}
+        onClose={() => setDeleteWO(null)}
+        onConfirm={async () => { await workOrdersApi.remove(deleteWO.id); loadWorkOrders(); }}
+        title="Delete work order?"
+        description="Permanently delete this work order. This cannot be undone."
+        confirmLabel="Delete"
+      />
+      <ConfirmDialog
+        open={deleteRequestOpen}
+        onClose={() => setDeleteRequestOpen(false)}
+        onConfirm={async () => { await maintenanceApi.remove(id); navigate('/maintenance', { replace: true }); }}
+        title="Delete request?"
+        description="Permanently delete this request, including its work orders and photos. This cannot be undone."
+        confirmLabel="Delete"
+      />
       <ConfirmDialog
         open={Boolean(cancelWO)}
         onClose={() => setCancelWO(null)}

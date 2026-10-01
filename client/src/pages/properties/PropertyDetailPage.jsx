@@ -174,7 +174,6 @@ export default function PropertyDetailPage() {
               <BuildingCard
                 key={b.id}
                 building={b}
-                canManage={canManageBuildings}
                 onOpenUnits={() => setUnitsBuilding(b)}
                 onEdit={() => setBuildingFormState(b)}
                 onOpenMedia={() => setMediaBuilding(b)}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { hasPermission } from '../../config/capabilities.js';
 import { Gift, Copy, Check, Wallet, CheckCircle2 } from 'lucide-react';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -192,8 +193,8 @@ export default function ReferralsPage() {
                     </Td>
                     {canManage && (
                       <Td>
-                        {r.status === 'pending' && <ApproveForm referral={r} onApproved={updateRow} />}
-                        {r.status === 'approved' && (
+                        {r.status === 'pending' && hasPermission('referrals:approve') && <ApproveForm referral={r} onApproved={updateRow} />}
+                        {r.status === 'approved' && hasPermission('referrals:mark-paid') && (
                           <div className="flex justify-end">
                             <Button size="sm" onClick={() => markPaid(r.id)} loading={payingId === r.id}>
                               <Wallet size={14} aria-hidden="true" />

@@ -14,7 +14,7 @@ import { VendorFormModal } from '../../components/vendors/VendorFormModal.jsx';
 import { vendorsApi } from '../../api/vendors.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useStatusCounts } from '../../hooks/useStatusCounts.js';
-import { CAN_MANAGE_VENDORS, canAny } from '../../config/capabilities.js';
+import { CAN_MANAGE_VENDORS, canAny, hasPermission } from '../../config/capabilities.js';
 
 const STATUS_TONE = { active: 'success', inactive: 'neutral' };
 const STATUS_LIST = ['active', 'inactive'];
@@ -118,7 +118,7 @@ export default function VendorsListPage() {
                   { icon: MapPin, label: 'Address', value: v.address || '—' },
                 ]}
                 onAction={() => setFormState(v)}
-                actionLabel="View profile"
+                actionLabel={hasPermission('vendors:update') ? 'View profile' : 'View'}
               />
             ))}
           </div>

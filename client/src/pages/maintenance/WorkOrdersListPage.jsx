@@ -11,20 +11,17 @@ import { StatCard } from '../../components/ui/StatCard.jsx';
 import { WorkOrderCard } from '../../components/maintenance/WorkOrderCard.jsx';
 import { CompleteWorkOrderModal } from '../../components/maintenance/CompleteWorkOrderModal.jsx';
 import { workOrdersApi } from '../../api/workOrders.js';
-import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useStatusCounts } from '../../hooks/useStatusCounts.js';
-import { CAN_MANAGE_WORK_ORDERS, canAny } from '../../config/capabilities.js';
 
 const STATUS_LIST = ['pending', 'in_progress', 'completed'];
 
 export default function WorkOrdersListPage() {
-  const { user } = useAuth();
-  const canManage = canAny(user?.roles ?? [], CAN_MANAGE_WORK_ORDERS);
 
   const [workOrders, setWorkOrders] = useState([]);
   const [meta, setMeta] = useState({ page: 1, pageSize: 20, total: 0, totalPages: 1 });
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('');
+  const [deleteWO, setDeleteWO] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [completeWO, setCompleteWO] = useState(null);
@@ -91,8 +88,8 @@ export default function WorkOrdersListPage() {
               <WorkOrderCard
                 key={wo.id}
                 workOrder={wo}
-                canManage={canManage}
                 onStart={() => startWorkOrder(wo)}
+                onDelete={() => setDeleteWO(wo)}
                 onComplete={() => setCompleteWO(wo)}
                 onCancel={() => setCancelWO(wo)}
               />
@@ -105,6 +102,14 @@ export default function WorkOrdersListPage() {
       )}
 
       <CompleteWorkOrderModal open={Boolean(completeWO)} onClose={() => setCompleteWO(null)} onSaved={load} workOrder={completeWO} />
+      <ConfirmDialog
+        open={Boolean(deleteWO)}
+        onClose={() => setDeleteWO(null)}
+        onConfirm={async () => { await workOrdersApi.remove(deleteWO.id); load(); }}
+        title="Delete work order?"
+        description="Permanently delete this work order. This cannot be undone."
+        confirmLabel="Delete"
+      />
       <ConfirmDialog
         open={Boolean(cancelWO)}
         onClose={() => setCancelWO(null)}

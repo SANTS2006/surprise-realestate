@@ -1,3 +1,5 @@
+import { deleteDocumentsFor } from './recordCleanup.service.js';
+import { prisma } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import { buildPaginationMeta } from '../utils/pagination.js';
 import {
@@ -72,4 +74,17 @@ export async function setVendorActiveStatus(id, organizationId, status, actingUs
   await setVendorStatus(id, organizationId, status);
   await audit({ organizationId, userId: actingUser.id, action: 'vendor.status_changed', entityType: 'vendor', entityId: id, oldValues: { status: existing.status }, newValues: { status }, req });
   return getVendor(id, organizationId);
+}
+
+// Past expenses and work orders that used this vendor keep their amounts and
+// history; they simply no longer point at a vendor. The vendor's own files
+// (logo/photos) are removed with it.
+export async function deleteVendorRecord(id, organizationId, actingUser, req) {
+  const existing = await findVendorById(id, organizationId);
+  if (!existing) throw AppError.notFound('Vendor not found.');
+
+  await deleteDocumentsFor(organizationId, 'vendor', id);
+  await prisma.vendor.delete({ where: { id } });
+  await audit({ organizationId, userId: actingUser.id, action: 'vendor.deleted', entityType: 'vendor', entityId: null, oldValues: { name: existing.name }, req });
+  return { deleted: true };
 }

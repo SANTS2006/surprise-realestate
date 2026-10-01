@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { ClipboardList, Calendar, Wallet, PlayCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { hasPermission } from '../../config/capabilities.js';
+import { ClipboardList, Calendar, Wallet, PlayCircle, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/Badge.jsx';
 import { Button } from '../ui/Button.jsx';
 import { formatCurrency } from '../../utils/currency.js';
@@ -7,7 +8,11 @@ import { formatCurrency } from '../../utils/currency.js';
 const STATUS_TONE = { pending: 'neutral', scheduled: 'brand', in_progress: 'warning', completed: 'success', cancelled: 'neutral' };
 const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' });
 
-export function WorkOrderCard({ workOrder, canManage, onStart, onComplete, onCancel }) {
+export function WorkOrderCard({ workOrder, onStart, onComplete, onCancel, onDelete }) {
+  const canUpdate = hasPermission('work-orders:update');
+  // Only work that never really happened (pending or cancelled) can be deleted.
+  const canDelete = hasPermission('work-orders:delete') && ['pending', 'cancelled'].includes(workOrder.status);
+  const hasActions = (canUpdate && ['pending', 'scheduled', 'in_progress'].includes(workOrder.status)) || canDelete;
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-gradient-to-br from-brand-100 to-accent-100 dark:from-brand-950 dark:to-accent-950">
@@ -39,9 +44,9 @@ export function WorkOrderCard({ workOrder, canManage, onStart, onComplete, onCan
           </div>
         </div>
 
-        {canManage && (
+        {hasActions && (
           <div className="mt-auto flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-            {['pending', 'scheduled'].includes(workOrder.status) && (
+            {canUpdate && ['pending', 'scheduled'].includes(workOrder.status) && (
               <>
                 <Button size="sm" className="flex-1" onClick={onStart}>
                   <PlayCircle size={14} aria-hidden="true" />
@@ -52,10 +57,15 @@ export function WorkOrderCard({ workOrder, canManage, onStart, onComplete, onCan
                 </Button>
               </>
             )}
-            {workOrder.status === 'in_progress' && (
+            {canUpdate && workOrder.status === 'in_progress' && (
               <Button size="sm" className="flex-1" onClick={onComplete}>
                 <CheckCircle2 size={14} aria-hidden="true" />
                 Complete
+              </Button>
+            )}
+            {canDelete && (
+              <Button variant="ghost" size="sm" onClick={onDelete} aria-label="Delete work order" className="ml-auto">
+                <Trash2 size={14} className="text-rose-500" aria-hidden="true" />
               </Button>
             )}
           </div>

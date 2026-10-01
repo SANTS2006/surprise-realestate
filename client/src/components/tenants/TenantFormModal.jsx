@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { hasPermission } from '../../config/capabilities.js';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '../ui/Modal.jsx';
@@ -159,6 +160,8 @@ function StatusControl({ tenant, onChanged }) {
 
 export function TenantFormModal({ open, onClose, onSaved, tenant }) {
   const isEdit = Boolean(tenant);
+  // Opening an existing tenant without permission to change it shows it read-only.
+  const readOnly = isEdit && !hasPermission('tenants:update');
   const [serverError, setServerError] = useState(null);
   const [pendingFiles, setPendingFiles] = useState([]);
   const [liveTenant, setLiveTenant] = useState(tenant);
@@ -216,8 +219,9 @@ export function TenantFormModal({ open, onClose, onSaved, tenant }) {
   return (
     <Modal open={open} onClose={onClose} title={isEdit ? 'Edit tenant' : 'New tenant'} size="lg">
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
-      {liveTenant && <StatusControl tenant={liveTenant} onChanged={(updated) => { setLiveTenant(updated); onSaved(); }} />}
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-4 flex flex-col gap-4">
+      {liveTenant && !readOnly && <StatusControl tenant={liveTenant} onChanged={(updated) => { setLiveTenant(updated); onSaved(); }} />}
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <fieldset disabled={readOnly} className="m-0 mt-4 flex min-w-0 flex-col gap-4 border-0 p-0">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="First name" required error={errors.firstName?.message} {...register('firstName')} />
           <Field label="Last name" required error={errors.lastName?.message} {...register('lastName')} />
@@ -252,9 +256,10 @@ export function TenantFormModal({ open, onClose, onSaved, tenant }) {
           )}
         </div>
 
-        <div className="mt-2 flex justify-end gap-3">
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" loading={isSubmitting}>{isEdit ? 'Save changes' : 'Create tenant'}</Button>
+        </fieldset>
+        <div className="mt-4 flex justify-end gap-3">
+          <Button type="button" variant="secondary" onClick={onClose}>{readOnly ? 'Close' : 'Cancel'}</Button>
+          {!readOnly && <Button type="submit" loading={isSubmitting}>{isEdit ? 'Save changes' : 'Create tenant'}</Button>}
         </div>
       </form>
     </Modal>

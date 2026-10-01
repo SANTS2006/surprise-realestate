@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { hasPermission } from '../../config/capabilities.js';
 import { Layers, Home, Pencil, Trash2, Images } from 'lucide-react';
 import { Button } from '../ui/Button.jsx';
 import { ConfirmDialog } from '../ui/ConfirmDialog.jsx';
@@ -6,7 +7,7 @@ import { ConfirmDialog } from '../ui/ConfirmDialog.jsx';
 // Card presentation for a single building — cover image, name/code/floors,
 // a unit-occupancy stat row, and edit/delete/media actions. Clicking the
 // card (or its "Manage units" button) opens BuildingUnitsModal.
-export function BuildingCard({ building, canManage, onOpenUnits, onEdit, onDeleted, onOpenMedia }) {
+export function BuildingCard({ building, onOpenUnits, onEdit, onDeleted, onOpenMedia }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const unitSummary = building.unitSummary ?? { total: 0, occupied: 0, available: 0 };
 
@@ -55,15 +56,15 @@ export function BuildingCard({ building, canManage, onOpenUnits, onEdit, onDelet
 
         <div className="mt-auto flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
           <Button size="sm" onClick={onOpenUnits} className="flex-1">Manage units</Button>
-          {canManage && (
-            <>
-              <Button variant="ghost" size="sm" onClick={onEdit} aria-label={`Edit building ${building.name}`}>
-                <Pencil size={14} aria-hidden="true" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)} aria-label={`Delete building ${building.name}`}>
-                <Trash2 size={14} className="text-rose-500" aria-hidden="true" />
-              </Button>
-            </>
+          {hasPermission('buildings:update') && (
+            <Button variant="ghost" size="sm" onClick={onEdit} aria-label={`Edit building ${building.name}`}>
+              <Pencil size={14} aria-hidden="true" />
+            </Button>
+          )}
+          {hasPermission('buildings:delete') && (
+            <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)} aria-label={`Delete building ${building.name}`}>
+              <Trash2 size={14} className="text-rose-500" aria-hidden="true" />
+            </Button>
           )}
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { hasPermission } from '../../config/capabilities.js';
 import { Plus, ClipboardCheck, CalendarClock, Loader2, CheckCircle2 } from 'lucide-react';
 import { Card, CardBody } from '../../components/ui/Card.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -107,7 +108,7 @@ export default function InspectionsListPage() {
                 key={insp.id}
                 inspection={insp}
                 propertyName={propertyNames[insp.propertyId]}
-                canManage={canManage}
+                canManage={hasPermission('inspections:update')}
                 onComplete={() => setCompleteInspection(insp)}
                 onCancel={() => setCancelInspection(insp)}
               />

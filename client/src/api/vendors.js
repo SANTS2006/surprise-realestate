@@ -7,4 +7,5 @@ export const vendorsApi = {
   create: (body) => apiClient.post('/vendors', body),
   update: (id, body) => apiClient.patch(`/vendors/${id}`, body),
   setStatus: (id, status) => apiClient.patch(`/vendors/${id}/status`, { status }),
+  remove: (id) => apiClient.delete(`/vendors/${id}`),
 };

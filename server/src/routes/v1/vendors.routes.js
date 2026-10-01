@@ -17,3 +17,4 @@ vendorsRouter.get('/:id', requirePermission('vendors:read'), validate(vendorIdPa
 vendorsRouter.post('/', csrfProtection, requirePermission('vendors:create'), validate(createVendorSchema), vendorController.create);
 vendorsRouter.patch('/:id', csrfProtection, requirePermission('vendors:update'), validate(updateVendorSchema), vendorController.update);
 vendorsRouter.patch('/:id/status', csrfProtection, requirePermission('vendors:update'), validate(setVendorStatusSchema), vendorController.setStatus);
+vendorsRouter.delete('/:id', csrfProtection, requirePermission('vendors:delete'), validate(vendorIdParamSchema), vendorController.remove);

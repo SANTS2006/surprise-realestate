@@ -8,4 +8,5 @@ export const workOrdersApi = {
   start: (id) => apiClient.post(`/work-orders/${id}/start`),
   complete: (id, actualCost) => apiClient.post(`/work-orders/${id}/complete`, { actualCost }),
   cancel: (id) => apiClient.post(`/work-orders/${id}/cancel`),
+  remove: (id) => apiClient.delete(`/work-orders/${id}`),
 };

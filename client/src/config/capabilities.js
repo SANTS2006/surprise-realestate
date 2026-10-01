@@ -48,6 +48,7 @@ export const CAN_MANAGE_MAINTENANCE = ['maintenance:update'];
 export const CAN_MANAGE_WORK_ORDERS = ['work-orders:create'];
 export const CAN_MANAGE_VENDORS = ['vendors:create'];
 export const CAN_MANAGE_INSPECTIONS = ['inspections:create'];
+export const CAN_UPDATE_INSPECTIONS = ['inspections:update'];
 export const CAN_CREATE_MAINTENANCE = ['maintenance:create'];
 
 export const CAN_MANAGE_USERS = ['users:update'];

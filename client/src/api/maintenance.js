@@ -8,6 +8,7 @@ export const maintenanceApi = {
   review: (id) => apiClient.post(`/maintenance/${id}/review`),
   assign: (id, assignedTo) => apiClient.post(`/maintenance/${id}/assign`, { assignedTo }),
   cancel: (id) => apiClient.post(`/maintenance/${id}/cancel`),
+  remove: (id) => apiClient.delete(`/maintenance/${id}`),
   listWorkOrders: (maintenanceRequestId) => apiClient.get(`/maintenance/${maintenanceRequestId}/work-orders`),
   createWorkOrder: (maintenanceRequestId, body) => apiClient.post(`/maintenance/${maintenanceRequestId}/work-orders`, body),
 };

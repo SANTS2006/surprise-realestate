@@ -78,7 +78,6 @@ export function BuildingUnitsModal({ open, onClose, building, onUnitsChanged }) 
               <UnitCard
                 key={u.id}
                 unit={u}
-                canManage={canManage}
                 onEdit={() => setFormState(u)}
                 onDeleted={handleDelete}
                 onStatusChanged={handleStatusChange}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { hasPermission } from '../../config/capabilities.js';
 import { Bed, Bath, Ruler, Wallet, Pencil, Trash2, Images, Home } from 'lucide-react';
 import { Badge } from '../ui/Badge.jsx';
 import { Button } from '../ui/Button.jsx';
@@ -12,7 +13,9 @@ const MANUALLY_SETTABLE = ['available', 'reserved', 'under_maintenance', 'unavai
 // bed/bath/area/rent stat grid, and edit/delete/media actions. Mirrors the
 // visual language of PropertyCard/EntityCard so buildings, units, tenants,
 // and owners all read as one consistent design system.
-export function UnitCard({ unit, canManage, onEdit, onDeleted, onStatusChanged, onOpenMedia }) {
+export function UnitCard({ unit, onEdit, onDeleted, onStatusChanged, onOpenMedia }) {
+  const canUpdate = hasPermission('units:update');
+  const canDelete = hasPermission('units:delete');
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [statusError, setStatusError] = useState(null);
 
@@ -63,9 +66,9 @@ export function UnitCard({ unit, canManage, onEdit, onDeleted, onStatusChanged, 
 
         {statusError && <p className="text-xs text-rose-600 dark:text-rose-400">{statusError}</p>}
 
-        {canManage && (
+        {(canUpdate || canDelete) && (
           <div className="mt-auto flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-            {unit.status !== 'occupied' ? (
+            {!canUpdate ? <span className="flex-1" /> : unit.status !== 'occupied' ? (
               <select
                 value={unit.status}
                 onChange={async (e) => {
@@ -83,12 +86,16 @@ export function UnitCard({ unit, canManage, onEdit, onDeleted, onStatusChanged, 
             ) : (
               <span className="flex-1 text-xs text-slate-400">Occupied — managed via lease</span>
             )}
-            <Button variant="ghost" size="sm" onClick={onEdit} aria-label={`Edit unit ${unit.unitNumber}`}>
-              <Pencil size={14} aria-hidden="true" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)} aria-label={`Delete unit ${unit.unitNumber}`}>
-              <Trash2 size={14} className="text-rose-500" aria-hidden="true" />
-            </Button>
+            {canUpdate && (
+              <Button variant="ghost" size="sm" onClick={onEdit} aria-label={`Edit unit ${unit.unitNumber}`}>
+                <Pencil size={14} aria-hidden="true" />
+              </Button>
+            )}
+            {canDelete && (
+              <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)} aria-label={`Delete unit ${unit.unitNumber}`}>
+                <Trash2 size={14} className="text-rose-500" aria-hidden="true" />
+              </Button>
+            )}
           </div>
         )}
       </div>

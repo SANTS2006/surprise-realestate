@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Wrench, MapPin, Calendar, ClipboardCheck, UserCog, XCircle, ArrowUpRight } from 'lucide-react';
+import { hasPermission } from '../../config/capabilities.js';
+import { Wrench, MapPin, Calendar, ClipboardCheck, UserCog, XCircle, ArrowUpRight, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/Badge.jsx';
 import { Button } from '../ui/Button.jsx';
 
@@ -7,7 +8,9 @@ const STATUS_TONE = { open: 'warning', in_review: 'brand', assigned: 'brand', sc
 const PRIORITY_TONE = { low: 'neutral', medium: 'brand', high: 'warning', emergency: 'danger' };
 const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' });
 
-export function MaintenanceRequestCard({ request, propertyName, canManage, onReview, onAssign, onCancel }) {
+export function MaintenanceRequestCard({ request, propertyName, onReview, onAssign, onCancel, onDelete }) {
+  const canUpdate = hasPermission('maintenance:update');
+  const canDelete = hasPermission('maintenance:delete');
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <Link to={`/maintenance/${request.id}`} className="relative block aspect-[16/9] w-full shrink-0 overflow-hidden bg-gradient-to-br from-brand-100 to-accent-100 dark:from-brand-950 dark:to-accent-950">
@@ -39,21 +42,26 @@ export function MaintenanceRequestCard({ request, propertyName, canManage, onRev
         </div>
 
         <div className="mt-auto flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
-          {canManage && request.status === 'open' && (
+          {canUpdate && request.status === 'open' && (
             <Button variant="secondary" size="sm" onClick={onReview}>
               <ClipboardCheck size={14} aria-hidden="true" />
               Review
             </Button>
           )}
-          {canManage && ['open', 'in_review'].includes(request.status) && (
+          {canUpdate && ['open', 'in_review'].includes(request.status) && (
             <Button size="sm" onClick={onAssign}>
               <UserCog size={14} aria-hidden="true" />
               Assign
             </Button>
           )}
-          {canManage && ['open', 'in_review', 'assigned', 'scheduled'].includes(request.status) && (
+          {canUpdate && ['open', 'in_review', 'assigned', 'scheduled'].includes(request.status) && (
             <Button variant="danger" size="sm" onClick={onCancel} aria-label="Cancel request">
               <XCircle size={14} aria-hidden="true" />
+            </Button>
+          )}
+          {canDelete && (
+            <Button variant="ghost" size="sm" onClick={onDelete} aria-label="Delete request">
+              <Trash2 size={14} className="text-rose-500" aria-hidden="true" />
             </Button>
           )}
           <Link to={`/maintenance/${request.id}`} className="ml-auto">

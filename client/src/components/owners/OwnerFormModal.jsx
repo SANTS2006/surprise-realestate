@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { hasPermission } from '../../config/capabilities.js';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '../ui/Modal.jsx';
@@ -81,6 +82,8 @@ function StatusControl({ owner, onChanged }) {
 
 export function OwnerFormModal({ open, onClose, onSaved, owner }) {
   const isEdit = Boolean(owner);
+  // Opening an existing owner without permission to change it shows it read-only.
+  const readOnly = isEdit && !hasPermission('owners:update');
   const [serverError, setServerError] = useState(null);
   const [pendingFiles, setPendingFiles] = useState([]);
   const [properties, setProperties] = useState([]);
@@ -143,8 +146,9 @@ export function OwnerFormModal({ open, onClose, onSaved, owner }) {
   return (
     <Modal open={open} onClose={onClose} title={isEdit ? 'Edit owner' : 'New owner'} size="lg">
       {serverError && <Alert variant="error" className="mb-4">{serverError}</Alert>}
-      {liveOwner && <StatusControl owner={liveOwner} onChanged={(updated) => { setLiveOwner(updated); onSaved(); }} />}
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+      {liveOwner && !readOnly && <StatusControl owner={liveOwner} onChanged={(updated) => { setLiveOwner(updated); onSaved(); }} />}
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <fieldset disabled={readOnly} className="m-0 flex min-w-0 flex-col gap-4 border-0 p-0">
         <Field label="Owner name" required error={errors.name?.message} {...register('name')} />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field
@@ -175,9 +179,10 @@ export function OwnerFormModal({ open, onClose, onSaved, owner }) {
           )}
         </div>
 
-        <div className="mt-2 flex justify-end gap-3">
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" loading={isSubmitting}>{isEdit ? 'Save changes' : 'Create owner & send invitation'}</Button>
+        </fieldset>
+        <div className="mt-4 flex justify-end gap-3">
+          <Button type="button" variant="secondary" onClick={onClose}>{readOnly ? 'Close' : 'Cancel'}</Button>
+          {!readOnly && <Button type="submit" loading={isSubmitting}>{isEdit ? 'Save changes' : 'Create owner & send invitation'}</Button>}
         </div>
       </form>
     </Modal>

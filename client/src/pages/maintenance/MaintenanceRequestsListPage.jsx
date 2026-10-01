@@ -16,14 +16,13 @@ import { maintenanceApi } from '../../api/maintenance.js';
 import { propertiesApi } from '../../api/properties.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useStatusCounts } from '../../hooks/useStatusCounts.js';
-import { CAN_MANAGE_MAINTENANCE, CAN_CREATE_MAINTENANCE, canAny } from '../../config/capabilities.js';
+import { CAN_CREATE_MAINTENANCE, canAny } from '../../config/capabilities.js';
 
 const OPEN_STATUS_LIST = ['open', 'in_progress', 'completed'];
 
 export default function MaintenanceRequestsListPage() {
   const { user } = useAuth();
   const roles = user?.roles ?? [];
-  const canManage = canAny(roles, CAN_MANAGE_MAINTENANCE);
   const canCreate = canAny(roles, CAN_CREATE_MAINTENANCE);
 
   const [requests, setRequests] = useState([]);
@@ -39,6 +38,7 @@ export default function MaintenanceRequestsListPage() {
   const [assignRequest, setAssignRequest] = useState(null);
   const [reviewRequest, setReviewRequest] = useState(null);
   const [cancelRequest, setCancelRequest] = useState(null);
+  const [deleteRequest, setDeleteRequest] = useState(null);
   const statusCounts = useStatusCounts(maintenanceApi.list, OPEN_STATUS_LIST, [meta.total]);
 
   const load = useCallback(() => {
@@ -121,8 +121,8 @@ export default function MaintenanceRequestsListPage() {
                 key={r.id}
                 request={r}
                 propertyName={propertyNames[r.propertyId]}
-                canManage={canManage}
                 onReview={() => setReviewRequest(r)}
+                onDelete={() => setDeleteRequest(r)}
                 onAssign={() => setAssignRequest(r)}
                 onCancel={() => setCancelRequest(r)}
               />
@@ -144,6 +144,14 @@ export default function MaintenanceRequestsListPage() {
         description={reviewRequest ? `Move "${reviewRequest.title}" into review.` : ''}
         confirmLabel="Move to review"
         variant="primary"
+      />
+      <ConfirmDialog
+        open={Boolean(deleteRequest)}
+        onClose={() => setDeleteRequest(null)}
+        onConfirm={async () => { await maintenanceApi.remove(deleteRequest.id); load(); }}
+        title="Delete request?"
+        description={deleteRequest ? `Permanently delete "${deleteRequest.title}", including its work orders and photos. This cannot be undone.` : ''}
+        confirmLabel="Delete"
       />
       <ConfirmDialog
         open={Boolean(cancelRequest)}

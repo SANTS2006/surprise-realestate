@@ -28,3 +28,8 @@ export const setStatus = asyncHandler(async (req, res) => {
   const vendor = await vendorService.setVendorActiveStatus(req.params.id, req.user.organizationId, req.body.status, req.user, req);
   sendSuccess(res, { data: vendor, message: 'Vendor status updated.' });
 });
+
+export const remove = asyncHandler(async (req, res) => {
+  await vendorService.deleteVendorRecord(req.params.id, req.user.organizationId, req.user, req);
+  sendSuccess(res, { data: null, message: 'Vendor deleted.' });
+});

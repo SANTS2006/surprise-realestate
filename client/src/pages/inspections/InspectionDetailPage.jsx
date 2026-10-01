@@ -12,7 +12,7 @@ import { Field, TextareaField } from '../../components/ui/Input.jsx';
 import { MediaGallery } from '../../components/media/MediaGallery.jsx';
 import { inspectionsApi } from '../../api/inspections.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { CAN_MANAGE_INSPECTIONS, CAN_UPLOAD_DOCUMENTS, CAN_DELETE_DOCUMENTS, canAny } from '../../config/capabilities.js';
+import { CAN_UPDATE_INSPECTIONS, CAN_UPLOAD_DOCUMENTS, CAN_DELETE_DOCUMENTS, canAny } from '../../config/capabilities.js';
 
 const STATUS_TONE = { scheduled: 'brand', in_progress: 'warning', completed: 'success', cancelled: 'neutral' };
 const dateFmt = new Intl.DateTimeFormat('en-US', { dateStyle: 'long' });
@@ -22,7 +22,7 @@ export default function InspectionDetailPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const roles = user?.roles ?? [];
-  const canManage = canAny(roles, CAN_MANAGE_INSPECTIONS);
+  const canManage = canAny(roles, CAN_UPDATE_INSPECTIONS);
   const canUploadMedia = canAny(roles, CAN_UPLOAD_DOCUMENTS);
   const canDeleteMedia = canAny(roles, CAN_DELETE_DOCUMENTS);
 
