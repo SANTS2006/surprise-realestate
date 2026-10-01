@@ -16,6 +16,9 @@ import VerifyEmailPage from './pages/auth/VerifyEmailPage.jsx';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage.jsx';
 import PlatformAdminLoginPage from './pages/platformAdmin/PlatformAdminLoginPage.jsx';
+import PlatformAdminForgotPasswordPage from './pages/platformAdmin/PlatformAdminForgotPasswordPage.jsx';
+import PlatformAdminResetPasswordPage from './pages/platformAdmin/PlatformAdminResetPasswordPage.jsx';
+import PlatformAdminLayout from './layouts/PlatformAdminLayout.jsx';
 
 // Every authenticated page is lazy-loaded — the auth screens above stay
 // eager since they're on the critical path for every first visit, but
@@ -47,7 +50,10 @@ const ReportsPage = lazy(() => import('./pages/reports/ReportsPage.jsx'));
 const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage.jsx'));
 const AuditLogsPage = lazy(() => import('./pages/audit/AuditLogsPage.jsx'));
 const ReferralsPage = lazy(() => import('./pages/referrals/ReferralsPage.jsx'));
-const PlatformAdminDashboardPage = lazy(() => import('./pages/platformAdmin/PlatformAdminDashboardPage.jsx'));
+const PlatformAdminOverviewPage = lazy(() => import('./pages/platformAdmin/PlatformAdminOverviewPage.jsx'));
+const PlatformAdminOrganizationsPage = lazy(() => import('./pages/platformAdmin/PlatformAdminOrganizationsPage.jsx'));
+const PlatformAdminAdministratorsPage = lazy(() => import('./pages/platformAdmin/PlatformAdminAdministratorsPage.jsx'));
+const PlatformAdminAccountPage = lazy(() => import('./pages/platformAdmin/PlatformAdminAccountPage.jsx'));
 
 export default function App() {
   return (
@@ -77,11 +83,15 @@ export default function App() {
                 organizations. Entirely separate auth from the tenant flows
                 above (see contexts/PlatformAdminContext.jsx). */}
             <Route path="/platform-admin/login" element={<PlatformAdminLoginPage />} />
+            <Route path="/platform-admin/forgot-password" element={<PlatformAdminForgotPasswordPage />} />
+            <Route path="/platform-admin/reset-password" element={<PlatformAdminResetPasswordPage />} />
             <Route element={<PlatformAdminProtectedRoute />}>
-              <Route
-                path="/platform-admin"
-                element={<Suspense fallback={<LoadingState />}><PlatformAdminDashboardPage /></Suspense>}
-              />
+              <Route element={<PlatformAdminLayout />}>
+                <Route path="/platform-admin" element={<Suspense fallback={<LoadingState />}><PlatformAdminOverviewPage /></Suspense>} />
+                <Route path="/platform-admin/organizations" element={<Suspense fallback={<LoadingState />}><PlatformAdminOrganizationsPage /></Suspense>} />
+                <Route path="/platform-admin/administrators" element={<Suspense fallback={<LoadingState />}><PlatformAdminAdministratorsPage /></Suspense>} />
+                <Route path="/platform-admin/account" element={<Suspense fallback={<LoadingState />}><PlatformAdminAccountPage /></Suspense>} />
+              </Route>
             </Route>
 
             {/* The authenticated dashboard itself carries no org slug in
